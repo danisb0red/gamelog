@@ -143,6 +143,24 @@ labels, screenshots, TestFlight. Tracked in the audit, not here.
   that have written text. No new endpoint needed; the diary payload already
   carries the review field.
 
+### Round 5 — production hardening ☑ (2026-08-16)
+- ☑ **Committed.** Branch `build/gamelog-web-and-ios`, 149 files tracked, 0
+  untracked, 3.1MB. `ios/` is deliberately **not** ignored (Expo's default)
+  because it carries the two path-quoting build fixes; without them a fresh
+  clone can't compile. Verified no secrets staged.
+- ☑ **`scripts/harden-db.ts`** — idempotent, dry-run by default:
+  - orphan `demo` profile removed (pre-auth seed, blocked the FK)
+  - `profiles.id → auth.users(id) ON DELETE CASCADE` + dropped the random
+    default. Account deletion now actually cascades, which Apple requires.
+  - 6 indexes on the columns every shelf/diary/profile query filters by
+  - **RLS on all 6 tables, 21 policies.** Reads are public where the web app
+    already made them public (profiles, community reviews); writes are
+    owner-only.
+- ☑ **Verified the boundary, not just the config:** anon *can* read reviews,
+  anon *cannot* insert, an authenticated user *cannot* forge a row under
+  another user's id (`42501` both times). Web app unaffected — it connects as
+  `postgres`, which has BYPASSRLS.
+
 ## Known risks
 - Supabase free tier auto-pauses (hit twice) — production needs Pro.
 - IGDB is a single point of failure and rate-limited to 4 req/s.
