@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The Expo app is a separate project with its own toolchain — Next's
+    // web rules (jsx-a11y, next/image) don't apply to React Native views.
+    "mobile/**",
   ]),
 ]);
 

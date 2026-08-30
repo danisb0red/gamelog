@@ -1,65 +1,163 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ActivityTimeline } from "@/components/activity-timeline";
+import { PopularList } from "@/components/popular-list";
+import { GameCover } from "@/components/game-cover";
+import { Shelf, EmptyShelf } from "@/components/shelf";
+import { StatStrip } from "@/components/stat-strip";
+import {
+  getRecentLogs,
+  getCurrentlyPlaying,
+  getUserGames,
+  getProfileById,
+} from "@/lib/db/queries";
+import { getUser, ensureProfile } from "@/lib/auth";
+import { getTrendingOrPopular } from "@/lib/games/trending";
+import { getMessage } from "@/lib/personality";
+import { PixelController } from "@/components/pixel";
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const user = await getUser();
+
+  // ── Signed out: a cinematic cover wall, not a centred paragraph. ──────────
+  if (!user) {
+    const popular = await getTrendingOrPopular(12);
+    const art = popular[0]?.coverUrl ?? null;
+
+    return (
+      <main className="relative flex-1">
+        {/* Room light is always on; the artwork wash layers on top when present. */}
+      <div className="ambient-warm" aria-hidden="true" />
+      {art && <div className="ambient" style={{ backgroundImage: `url(${art})` }} />}
+
+        <div className="mx-auto w-full max-w-6xl px-5 pb-16 pt-24">
+          <h1 className="max-w-3xl font-display text-5xl font-bold leading-[0.95] tracking-tight text-neutral-50 sm:text-7xl">
+            Every game you&apos;ve
+            <br />
+            ever played.
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-6 max-w-md text-[15px] leading-relaxed text-neutral-400">
+            Keep a record of what you play, rate it, and write it down. Your shelf
+            builds itself.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+          <div className="mt-9 flex items-center gap-5">
+            <Link
+              href="/login"
+              className="px-cut bg-accent px-6 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-accent-foreground transition hover:brightness-110"
+            >
+              Start your log
+            </Link>
+            <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-neutral-600">
+              Free · No ads
+            </span>
+          </div>
+
+          {popular.length > 0 && (
+            <div className="mt-20">
+              <Shelf title="What people are playing">
+                {popular.map((g, i) => (
+                  <GameCover key={g.id} game={g} size="md" priorityIndex={i} />
+                ))}
+              </Shelf>
+            </div>
+          )}
         </div>
       </main>
-    </div>
+    );
+  }
+
+  // ── Signed in ────────────────────────────────────────────────────────────
+  await ensureProfile(user);
+  const [playing, entries, popular, allGames, profile] = await Promise.all([
+    getCurrentlyPlaying(user.id),
+    getRecentLogs(user.id, 12),
+    getTrendingOrPopular(10),
+    getUserGames(user.id),
+    getProfileById(user.id),
+  ]);
+
+  // The hero's ambient wash comes from whatever you're playing right now, so the
+  // page is literally coloured by your current game. Falls back to trending.
+  const heroArt = playing[0]?.coverUrl ?? popular[0]?.coverUrl ?? null;
+  const name = profile?.displayName || profile?.username || "player";
+
+  return (
+    <main className="relative flex-1">
+      {/* Room light is always on; the artwork wash layers on top when present. */}
+      <div className="ambient-warm" aria-hidden="true" />
+      {heroArt && <div className="ambient" style={{ backgroundImage: `url(${heroArt})` }} />}
+
+      <div className="mx-auto w-full max-w-6xl px-5 pb-20">
+        {/* ── Hero ─────────────────────────────────────────────────────── */}
+        <header className="pb-6 pt-16">
+          <span className="hud-label">Save file</span>
+          <h1 className="mt-4 font-display text-4xl font-bold tracking-tight text-neutral-50 sm:text-6xl">
+            {name}
+            <span className="text-accent">.</span>
+          </h1>
+          <p className="mt-3 flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-neutral-500">
+            <PixelController size={15} className="text-neutral-600" />
+            {allGames.length} games on the shelf
+          </p>
+        </header>
+
+        <div className="rule-pixel" aria-hidden="true">
+          <span />
+        </div>
+
+        {/* ── Continue: the largest artwork on the page ─────────────────── */}
+        <Shelf
+          title="Currently playing"
+          count={playing.length || undefined}
+          action={profile ? { href: `/u/${profile.username}`, text: "Full shelf" } : undefined}
+        >
+          {playing.length > 0 ? (
+            playing.map((g, i) => (
+              <GameCover
+                key={g.gameId}
+                game={g}
+                size="xl"
+                featured={i === 0}
+                priorityIndex={i}
+              />
+            ))
+          ) : (
+            <EmptyShelf
+              message={getMessage("empty.playing")}
+              hint="Set a game to Playing and it appears here."
+            />
+          )}
+        </Shelf>
+
+        {/* ── Collection: typographic, lets the page breathe ────────────── */}
+        <StatStrip games={allGames} />
+
+        <div className="rule-pixel" aria-hidden="true">
+          <span />
+        </div>
+
+        {/* ── Dense row: journal beside the chart ───────────────────────── */}
+        <div className="grid gap-12 pt-10 lg:grid-cols-[1.7fr_1fr] lg:gap-16">
+          <section>
+            <h2 className="mb-6 font-display text-2xl font-semibold tracking-tight text-neutral-100">
+              Recent activity
+            </h2>
+            <ActivityTimeline entries={entries} />
+          </section>
+
+          <aside>
+            <h2 className="mb-6 font-display text-2xl font-semibold tracking-tight text-neutral-100">
+              Trending
+            </h2>
+            <PopularList games={popular} />
+            <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.15em] text-neutral-600">
+              Most-played on Steam right now
+            </p>
+          </aside>
+        </div>
+      </div>
+    </main>
   );
 }

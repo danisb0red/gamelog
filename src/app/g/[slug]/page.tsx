@@ -1,0 +1,297 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { gameProvider, gameProviderName } from "@/lib/games";
+import { getMessage } from "@/lib/personality";
+import { GameSigil } from "@/components/game-sigil";
+import { PixelBubble } from "@/components/pixel";
+import { db } from "@/lib/db";
+import { games } from "@/lib/db/schema";
+import { getUser } from "@/lib/auth";
+import {
+  getGameAggregate,
+  getGameReviews,
+  getUserLogForGame,
+  getUserLists,
+  getUserFavorites,
+} from "@/lib/db/queries";
+import { StarRating } from "@/components/star-rating";
+import { LogModal } from "@/components/log-modal";
+import { AddToList } from "@/components/add-to-list";
+import { FavoriteButton } from "@/components/favorite-button";
+import { Screenshots } from "@/components/screenshots";
+import type { NamedRef } from "@/lib/games/types";
+
+export const dynamic = "force-dynamic";
+
+function Meta({ label, value }: { label: string; value: string | null }) {
+  if (!value) return null;
+  return (
+    <div>
+      <dt className="hud-label">{label}</dt>
+      <dd className="text-sm">{value}</dd>
+    </div>
+  );
+}
+
+/** Metadata row whose values are named entities, optionally linked to a page. */
+function RefMeta({
+  label,
+  refs,
+  linkPrefix,
+}: {
+  label: string;
+  refs: NamedRef[];
+  linkPrefix?: string;
+}) {
+  if (refs.length === 0) return null;
+  return (
+    <div>
+      <dt className="hud-label">{label}</dt>
+      <dd className="text-sm">
+        {refs.map((r, i) => (
+          <span key={r.slug || r.name}>
+            {i > 0 && ", "}
+            {linkPrefix ? (
+              <Link href={`${linkPrefix}/${r.slug}`} className="hover:underline">
+                {r.name}
+              </Link>
+            ) : (
+              r.name
+            )}
+          </span>
+        ))}
+      </dd>
+    </div>
+  );
+}
+
+export default async function GamePage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const game = await gameProvider.getGame(slug);
+  if (!game) notFound();
+
+  // Lazily cache the game so logs/reviews can FK to it and it appears in lists.
+  await db
+    .insert(games)
+    .values({
+      id: game.id,
+      slug: game.slug,
+      name: game.name,
+      coverUrl: game.coverUrl,
+      releaseYear: game.releaseYear,
+    })
+    .onConflictDoUpdate({
+      target: games.id,
+      set: { name: game.name, coverUrl: game.coverUrl, syncedAt: new Date() },
+    });
+
+  const [user, aggregate, reviews] = await Promise.all([
+    getUser(),
+    getGameAggregate(game.id),
+    getGameReviews(game.id),
+  ]);
+  const existing = user ? await getUserLogForGame(user.id, game.id) : null;
+  const userLists = user ? await getUserLists(user.id) : [];
+  const userFavorites = user ? await getUserFavorites(user.id) : [];
+  const isFavorited = userFavorites.some((f) => f.gameId === game.id);
+  const favoritesFull = userFavorites.length >= 4;
+
+  return (
+    <main className="relative flex-1">
+      {/* The game's own art washes the top of its page — every game page is
+          coloured differently, which is the cheapest possible way to make the
+          site feel like it's about games rather than rows in a table. */}
+      {/* Room light is always on; the artwork wash layers on top when present. */}
+      <div className="ambient-warm" aria-hidden="true" />
+      {game.coverUrl && (
+        <div className="ambient" style={{ backgroundImage: `url(${game.coverUrl})` }} />
+      )}
+
+      <div className="mx-auto w-full max-w-5xl px-5 pb-16 pt-14">
+        <div className="flex flex-col gap-8 sm:flex-row">
+          {/* Cover, treated as the hero object: bigger, squarer, rim-lit. */}
+          <div className="shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={game.coverUrl ?? ""}
+              alt={game.name}
+              className="cover cover-featured aspect-[3/4] w-52 rounded-[4px] bg-surface-2 object-cover sm:w-56"
+            />
+          </div>
+
+          {/* Title + actions */}
+          <div className="flex-1 space-y-5">
+            <div>
+              <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-neutral-50 sm:text-5xl">
+                {game.name}
+                {/* Visual easter egg: a pixel motif for games that have one.
+                    Unlabelled by design — recognising it is the reward. */}
+                <GameSigil title={game.name} className="ml-3 -translate-y-1.5" />
+              </h1>
+              {game.releaseYear && (
+                <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.18em] text-neutral-500">
+                  {game.releaseYear}
+                  {game.developers[0] && (
+                    <>
+                      <span className="text-neutral-700"> · </span>
+                      {game.developers[0].name}
+                    </>
+                  )}
+                </p>
+              )}
+            </div>
+
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+            <div>
+              <p className="hud-label">Community</p>
+              <div className="mt-1.5">
+              {aggregate.average != null ? (
+                <div className="flex items-center gap-2">
+                  <StarRating value={aggregate.average} readOnly />
+                  <span className="text-sm text-neutral-500">
+                    {aggregate.average.toFixed(1)} ({aggregate.ratingCount})
+                  </span>
+                </div>
+              ) : (
+                <p className="text-sm text-neutral-500">Not yet rated</p>
+              )}
+              </div>
+            </div>
+            {game.externalRating != null && (
+              <div>
+                <p className="hud-label">{gameProviderName}</p>
+                <p className="mt-1.5 font-mono text-lg font-bold text-neutral-200">
+                  {game.externalRating.toFixed(1)}
+                  <span className="text-sm font-normal text-neutral-600">/5</span>
+                </p>
+              </div>
+            )}
+            {game.metacritic != null && (
+              <div>
+                <p className="hud-label">Metacritic</p>
+                <span
+                  className={`mt-1.5 inline-block rounded-sm px-2 py-0.5 font-mono text-lg font-bold leading-tight text-black ${
+                    game.metacritic >= 75
+                      ? "bg-status-playing"
+                      : game.metacritic >= 50
+                        ? "bg-status-finished"
+                        : "bg-status-dropped"
+                  }`}
+                >
+                  {game.metacritic}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {user ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <LogModal game={game} platforms={game.platforms} existing={existing} />
+              <AddToList
+                game={{
+                  id: game.id,
+                  name: game.name,
+                  slug: game.slug,
+                  coverUrl: game.coverUrl,
+                  releaseYear: game.releaseYear,
+                }}
+                lists={userLists.map((l) => ({ id: l.id, title: l.title }))}
+              />
+              <FavoriteButton
+                game={{
+                  id: game.id,
+                  name: game.name,
+                  slug: game.slug,
+                  coverUrl: game.coverUrl,
+                  releaseYear: game.releaseYear,
+                }}
+                isFavorited={isFavorited}
+                favoritesFull={favoritesFull}
+              />
+              {existing && (
+                <span className="text-sm text-neutral-500">
+                  You: {existing.status}
+                  {existing.rating ? ` · ${Number(existing.rating)}★` : ""}
+                  {existing.platform ? ` · ${existing.platform}` : ""}
+                </span>
+              )}
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="px-cut inline-block bg-accent px-5 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-accent-foreground transition hover:brightness-110"
+            >
+              Sign in to log this
+            </Link>
+          )}
+
+          {/* Metadata */}
+          <dl className="grid grid-cols-2 gap-4 pt-2 sm:grid-cols-3">
+            <Meta label="Released" value={game.releaseDate} />
+            <Meta
+              label="Playtime"
+              value={game.playtimeHours ? `~${game.playtimeHours}h` : null}
+            />
+            <Meta label="Genres" value={game.genres.join(", ") || null} />
+            <Meta label="Platforms" value={game.platforms.join(", ") || null} />
+            <RefMeta label="Developer" refs={game.developers} linkPrefix="/developer" />
+            <RefMeta label="Publisher" refs={game.publishers} />
+          </dl>
+        </div>
+      </div>
+
+      {/* Description */}
+      {game.description && (
+        <section className="mt-8 max-w-3xl">
+          <h2 className="mb-2 hud-label">About</h2>
+          <p className="whitespace-pre-line text-sm leading-relaxed text-neutral-300">
+            {game.description}
+          </p>
+        </section>
+      )}
+
+      {/* Screenshots */}
+      {game.screenshots.length > 0 && (
+        <section className="mt-8">
+          <h2 className="mb-3 hud-label">Screenshots</h2>
+          <Screenshots images={game.screenshots} />
+        </section>
+      )}
+
+      {/* Reviews */}
+      <section className="mt-10">
+        <h2 className="mb-3 flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-neutral-400">
+          <PixelBubble size={13} className="text-neutral-600" />
+          Reviews
+        </h2>
+        {reviews.length === 0 ? (
+          <p className="text-sm text-neutral-500">{getMessage("empty.reviews")}</p>
+        ) : (
+          <ul className="divide-y divide-neutral-800/70 border-y border-neutral-800/70">
+            {reviews.map((r) => (
+              <li key={r.id} className="py-5">
+                <div className="mb-2 flex items-center gap-2.5">
+                  <Link
+                    href={`/u/${r.username}`}
+                    className="font-mono text-[11px] uppercase tracking-[0.15em] text-neutral-400 hover:text-accent"
+                  >
+                    {r.displayName ?? r.username}
+                  </Link>
+                  {r.rating != null && (
+                    <StarRating value={Number(r.rating)} readOnly />
+                  )}
+                </div>
+                <p className="text-[15px] leading-relaxed text-neutral-300">{r.review}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+        </section>
+      </div>
+    </main>
+  );
+}

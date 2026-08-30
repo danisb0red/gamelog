@@ -1,26 +1,780 @@
 @import "tailwindcss";
 
+/* ============================================================================
+   GameLog — "The Shelf"
+   ----------------------------------------------------------------------------
+   Visual metaphor: your games are physical objects on a lit shelf, and your
+   profile is a save file. Everything below serves that idea.
+
+   Three deliberate decisions:
+
+   1. DARK, ALWAYS. The old build followed the OS via prefers-color-scheme, so
+      half of all visitors got a bright cream site that read like a generic SaaS
+      dashboard. Cover art needs a dark room to glow in. We commit to one look
+      and design depth against it, rather than making two mediocre themes.
+      Tailwind's dark variant is re-pointed at a class so every existing
+      `dark:` utility in the codebase keeps working under that commitment.
+
+   2. THREE TYPEFACES WITH DISTINCT JOBS. Display (Space Grotesk) for editorial
+      headings, body (Figtree) for reading, mono (Space Mono) for metadata —
+      counts, dates, platforms, status labels. The mono is what makes it read as
+      a *system* rather than a webpage: it's the save-file/HUD register.
+
+   3. STATUS IS A COLOR LANGUAGE. Playing, finished, backlog, replaying and
+      dropped each own a hue, used consistently on pips, borders, glows and
+      badges, so you can read your shelf by colour before you read any text.
+   ========================================================================== */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+
+  /* ESPRESSO, NOT BLACK.
+     Every surface carries a brown bias (hue ~28°, low saturation). Held next to
+     a neutral #12100e these read barely different; on screen together they stop
+     the page looking like a dark-mode toggle and start it looking like aged
+     paper under a warm lamp. Nothing here should read as *visibly* brown — if
+     you can name the colour, it's gone too far. */
+  --background: #15110c;
+  --foreground: #f0e5d6; /* ivory, not white — warm enough to lose the clinical edge */
+
+  /* Elevation surfaces. The shelf is lit from above, so higher = lighter, and
+     each step also gains a little warmth as it comes toward the light. */
+  --surface-0: #15110c;
+  --surface-1: #1d1811;
+  --surface-2: #262019;
+  --surface-3: #322a21;
+
+  /* The room's light source: a warm amber, used for every glow on the site so
+     ambience stays one colour rather than a collection of tints. */
+  --room-light: 34, 22, 12;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), var(--font-figtree), sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, SFMono-Regular, monospace;
+
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
+  /* Coral, aged. The old #ff7a6b was a bright UI red — pure and a bit digital.
+     Pulling saturation down and hue slightly toward terracotta makes it read as
+     printed ink that has sat in a drawer for twenty years, which is the whole
+     brief. Still unmistakably the same accent. */
+  --color-accent: #e5715b;
+  --color-accent-foreground: #24100b;
+
+  /* Status language — desaturated a step so the shelf reads warm rather than
+     like five saturated dots on black. */
+  --color-status-playing: #6fbf88;
+  --color-status-finished: #dfa646;
+  --color-status-backlog: #8b8cc0;
+  --color-status-replaying: #ac79c4;
+  --color-status-dropped: #c06a63;
+
+  /* Warm neutral ramp (keeps every existing neutral-* class on-theme).
+     Shifted further toward paper: the lights are creams, the darks are coffee. */
+  --color-neutral-50: #fbf6ee;
+  --color-neutral-100: #f3ebdf;
+  --color-neutral-200: #e7dccb;
+  --color-neutral-300: #cec0aa;
+  --color-neutral-400: #a89880;
+  --color-neutral-500: #978671;
+  --color-neutral-600: #7a6c58;
+  --color-neutral-700: #40372c;
+  --color-neutral-800: #2b241b;
+  --color-neutral-900: #1e1811;
+  --color-neutral-950: #15110c;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ── The room ────────────────────────────────────────────────────────────
+   The page's base is not a flat fill. It's four things stacked: espresso base,
+   a warm pool of light from above-left (the lamp), a cooler counter-light from
+   the lower-right so the darks aren't dead, and a wide amber wash. This is what
+   makes the background look like a *surface in a room* rather than a colour. */
 body {
-  background: var(--background);
+  background-color: var(--background);
+  background-image:
+    radial-gradient(
+      100% 70% at 22% -8%,
+      rgba(var(--room-light), 0.13),
+      transparent 62%
+    ),
+    radial-gradient(
+      85% 60% at 88% 108%,
+      rgba(64, 46, 34, 0.1),
+      transparent 60%
+    ),
+    linear-gradient(178deg, rgba(52, 34, 20, 0.06), transparent 45%);
+  background-attachment: fixed;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+/* ── Materiality ─────────────────────────────────────────────────────────
+   Three separate layers rather than one noise overlay, because a single
+   uniform grain is exactly what reads as "filter applied to a website".
+   Real material has structure at more than one scale.
+
+   Layer 1 (::before) — paper. Two turbulence fields at different frequencies:
+   a coarse fibre at 0.5 and a fine tooth at 2.2. Together they read as stock
+   rather than static, and because they're different sizes the eye can't lock
+   onto a repeat.
+
+   Layer 2 (::after) — the screen. A soft luminance ripple (NOT scanlines: the
+   stops fade rather than step, over a 4px pitch, so it's a gentle modulation
+   you feel as bloom), plus the vignette that closes the corners.
+
+   Layer 3 (.grain > * bloom) — handled per-component.
+
+   Test for all of it: if you can point at the effect and name it, turn it down. */
+.grain::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.055;
+  mix-blend-mode: overlay;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.2' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.5' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23c)'/%3E%3C/svg%3E");
+  background-size: 180px 180px, 420px 420px;
+}
+
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.05) 0px,
+      rgba(0, 0, 0, 0) 1.5px,
+      rgba(0, 0, 0, 0) 2.5px,
+      rgba(0, 0, 0, 0.05) 4px
+    ),
+    radial-gradient(
+      120% 100% at 50% 42%,
+      transparent 55%,
+      rgba(10, 6, 3, 0.5) 100%
+    );
+  background-size: 100% 4px, 100% 100%;
+  opacity: 0.6;
+  mix-blend-mode: multiply;
+}
+
+/* ── Shelves ─────────────────────────────────────────────────────────────
+   Horizontal scrollers that snap, hide their scrollbar, and sit on a drawn
+   shelf edge. Overflow is visible vertically so cards can lift out of the row
+   on hover without being clipped — the reason for the padding hack below. */
+.shelf {
+  display: flex;
+  gap: 1.25rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  /* Room for the hover lift + shadow, clawed back with a negative margin so the
+     row still lines up with the section heading above it. */
+  padding: 1.5rem 1rem 2.25rem;
+  margin: -1.5rem -1rem -1.25rem;
+  /*
+   * Required, not optional. `scroll-snap-align: start` on the children snaps to
+   * the SCROLLPORT edge, which ignores this element's padding — so without
+   * scroll-padding the browser quietly scrolls the row 1rem left and the first
+   * cover ends up hard against the viewport edge, misaligned with the heading.
+   * Matching scroll-padding to the inline padding puts it back.
+   *
+   * Longhands, not `scroll-padding-inline`: the build's CSS pipeline drops the
+   * logical shorthand here (verified by diffing the served chunk).
+   */
+  scroll-padding-left: 1rem;
+  scroll-padding-right: 1rem;
+}
+
+.shelf::-webkit-scrollbar {
+  display: none;
+}
+
+.shelf > * {
+  scroll-snap-align: start;
+  flex: none;
+}
+
+/* The lit edge the covers stand on. */
+.shelf-edge {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 122, 107, 0.35) 15%,
+    rgba(242, 233, 225, 0.18) 50%,
+    rgba(255, 122, 107, 0.35) 85%,
+    transparent
+  );
+}
+
+/*
+ * The glow beneath the shelf edge, dithered.
+ *
+ * A checkerboard multiplied into the falloff instead of a clean gradient — the
+ * technique old hardware used to fake blending. At 4px and this opacity you
+ * read it as texture, not as a pattern, and it's the one place the pixel grid
+ * touches the lighting rather than the geometry.
+ */
+.shelf-edge::after {
+  content: "";
+  display: block;
+  height: 2.5rem;
+  background-image:
+    repeating-conic-gradient(
+      rgba(229, 113, 91, 0.05) 0% 25%,
+      transparent 0% 50%
+    ),
+    linear-gradient(180deg, rgba(229, 113, 91, 0.05), transparent 70%);
+  background-size: 4px 4px, 100% 100%;
+  mask-image: linear-gradient(180deg, #000, transparent 75%);
+  -webkit-mask-image: linear-gradient(180deg, #000, transparent 75%);
+}
+
+/* ── Cover art ───────────────────────────────────────────────────────────
+   Covers lift and tilt very slightly toward the viewer. The transform is small
+   on purpose: enough to feel physical, not enough to read as an animation
+   showreel. */
+/*
+ * Shadows are brown-black, never neutral black. A pure #000 shadow on a warm
+ * surface punches a cold hole in it; a brown one reads as the object actually
+ * casting onto the shelf. The contact shadow (tight, 1–2px) is what sells the
+ * weight — objects touch the surface before they float above it.
+ */
+.cover {
+  transform: translateZ(0);
+  transition:
+    transform 300ms cubic-bezier(0.2, 0.7, 0.3, 1),
+    box-shadow 300ms ease,
+    filter 300ms ease;
+  box-shadow:
+    0 1px 1px rgba(14, 8, 4, 0.75),
+    0 6px 16px -6px rgba(14, 8, 4, 0.7),
+    0 14px 34px -18px rgba(14, 8, 4, 0.6);
+}
+
+.group:hover .cover,
+.cover:hover {
+  transform: translateY(-9px) scale(1.028);
+  box-shadow:
+    0 2px 3px rgba(14, 8, 4, 0.7),
+    0 24px 48px -14px rgba(10, 6, 3, 0.85),
+    /* warm rim, as though the lamp catches the raised edge */
+    0 0 0 1px rgba(229, 113, 91, 0.16),
+    0 0 34px -10px rgba(var(--room-light), 0.5);
+}
+
+/*
+ * Artwork lighting the room.
+ *
+ * A blurred, over-scaled copy of the cover sits behind the real one and bleeds
+ * its own colours outward — so Hades throws warm red, Zelda throws green-gold,
+ * Batman throws cold blue, with no colour extraction and no JS. The artwork
+ * genuinely lights its surroundings because it *is* the light source.
+ *
+ * Off by default; only featured/hovered covers get it, or the page turns into
+ * a light show.
+ */
+.art-bloom {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-size: cover;
+  background-position: center;
+  filter: blur(26px) saturate(1.7);
+  opacity: 0;
+  transform: scale(1.06);
+  transition: opacity 380ms ease, transform 380ms ease;
+  pointer-events: none;
+}
+
+.group:hover .art-bloom {
+  opacity: 0.5;
+  transform: scale(1.22) translateY(4px);
+}
+
+.art-bloom-on {
+  opacity: 0.26;
+  transform: scale(1.24) translateY(4px);
+  filter: blur(40px) saturate(1.5);
+}
+
+/*
+ * Case spine.
+ *
+ * A hairline of light down the left edge and a soft inner shadow, so the
+ * artwork reads as the front face of a physical box rather than a flat image.
+ * This is the single detail that turns "picture of a game" into "a game on a
+ * shelf", and it costs one pseudo-element.
+ */
+.case::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.22) 0px,
+    rgba(255, 255, 255, 0.06) 2px,
+    transparent 5px,
+    transparent 92%,
+    rgba(0, 0, 0, 0.28) 100%
+  );
+  box-shadow: inset 0 0 0 1px rgba(242, 233, 225, 0.06);
+}
+
+/* Pixel art must never be smoothed by the browser's scaler. */
+.pixel {
+  image-rendering: pixelated;
+  shape-rendering: crispEdges;
+}
+
+/* Slow blink for save indicators and the PRESS START cue. */
+@keyframes blink-soft {
+  0%, 45% { opacity: 1; }
+  55%, 100% { opacity: 0.15; }
+}
+
+.blink {
+  animation: blink-soft 1.6s steps(1, end) infinite;
+}
+
+/* Ember flicker for the bonfire sigil — irregular, never a clean pulse. */
+@keyframes ember {
+  0%, 100% { opacity: 0.85; transform: translateY(0) scale(1); }
+  30% { opacity: 1; transform: translateY(-1px) scale(1.08); }
+  60% { opacity: 0.6; transform: translateY(0.5px) scale(0.96); }
+}
+
+.ember {
+  animation: ember 2.3s ease-in-out infinite;
+}
+
+/* Selected / featured artwork gets a warm rim rather than a border. */
+.cover-featured {
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.6),
+    0 30px 60px -20px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgba(255, 122, 107, 0.25),
+    0 0 40px -12px rgba(255, 122, 107, 0.35);
+}
+
+/* ── HUD details ─────────────────────────────────────────────────────────
+   Small uppercase mono labels with a leading tick — the section markers. Used
+   instead of plain <h2>s so the page reads like an interface. */
+.hud-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #a89a8b;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hud-label::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  background: var(--color-accent, #e5715b);
+  /* A square, not a triangle: the triangle read as a play button, which is a
+     media control rather than part of a pixel system. */
+}
+
+/*
+ * Registration mark — the crosshair printers put outside the trim to align
+ * colour plates. Belongs on a game manual, means nothing here, and that's
+ * exactly why it works: it's a print artefact, not an icon. Used once or twice
+ * per page at most.
+ */
+.reg-mark {
+  position: relative;
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  opacity: 0.45;
+}
+
+.reg-mark::before,
+.reg-mark::after {
+  content: "";
+  position: absolute;
+  background: currentColor;
+}
+
+.reg-mark::before {
+  left: 4px;
+  top: 0;
+  width: 1px;
+  height: 9px;
+}
+
+.reg-mark::after {
+  top: 4px;
+  left: 0;
+  height: 1px;
+  width: 9px;
+}
+
+/*
+ * Worn divider. A rule whose opacity varies irregularly along its length, like
+ * ink that didn't take evenly. The irregularity is hand-authored rather than
+ * even, because a *evenly* varying rule just reads as a gradient.
+ */
+.rule-worn {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(231, 220, 203, 0.16) 0%,
+    rgba(231, 220, 203, 0.05) 8%,
+    rgba(231, 220, 203, 0.14) 19%,
+    rgba(231, 220, 203, 0.17) 34%,
+    rgba(231, 220, 203, 0.06) 41%,
+    rgba(231, 220, 203, 0.13) 58%,
+    rgba(231, 220, 203, 0.03) 67%,
+    rgba(231, 220, 203, 0.11) 81%,
+    rgba(231, 220, 203, 0.02) 100%
+  );
+}
+
+/* Hairline rule that fades out — separates sections without boxing them. */
+.rule-fade {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(242, 233, 225, 0.14), transparent);
+}
+
+/* ── Ambient artwork backdrop ────────────────────────────────────────────
+   The hero's blurred, desaturated cover art. Masked to fade downward so it
+   dissolves into the page instead of ending on a hard edge. */
+/*
+ * Warm the ambient wash. The blurred cover art alone can skew any colour —
+ * a blue-heavy game made the hero read cold and modern, fighting everything
+ * else here. Multiplying an amber layer under it keeps every page's tint
+ * inside the same warm family while still letting the artwork drive the hue.
+ */
+.ambient-warm {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 420px;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    90% 100% at 30% 0%,
+    rgba(var(--room-light), 0.22),
+    transparent 70%
+  );
+}
+
+.ambient {
+  position: absolute;
+  /* Bounded to a band at the top of the page, NOT inset:0.
+     Stretching it over the full page height turned the blur into a single flat
+     smear behind every section and wrecked text contrast — a tint should be a
+     glow at the top of the page, not a background colour for the whole thing. */
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 420px;
+  z-index: -1;
+  background-size: cover;
+  background-position: center 22%;
+  filter: blur(80px) saturate(1.1);
+  /* Low enough that body copy keeps its contrast against surface-0. */
+  opacity: 0.22;
+  transform: scale(1.15);
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.4) 55%, transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    rgba(0, 0, 0, 0.4) 55%,
+    transparent 100%
+  );
+}
+
+/* Scrim: keeps the band reading as depth behind the type rather than a wash
+   over it. Sits inside .ambient so it stays below all real content. */
+.ambient::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(16, 13, 12, 0.3), rgba(16, 13, 12, 0.85));
+}
+
+/* ── Progress / meter ────────────────────────────────────────────────────
+   Quest-bar styling for the status breakdown. Segments, not a smooth fill —
+   segmentation is what makes it read as a game meter rather than a loading bar. */
+.meter {
+  height: 0.5rem;
+  border-radius: 999px;
+  overflow: hidden;
+  display: flex;
+  background: rgba(242, 233, 225, 0.07);
+}
+
+.meter > span {
+  display: block;
+  height: 100%;
+  transition: width 500ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+
+/* ── Pixel identity ──────────────────────────────────────────────────────
+   The signature layer. Type, geometry and marks all sit on the same implied
+   pixel grid, so the aesthetic comes from *shape* rather than from writing
+   game words anywhere. Strip it all out and a clean editorial site remains —
+   that's the balance being aimed for.
+   ====================================================================== */
+
+/*
+ * Pixel-cut corners.
+ *
+ * A 3px step bitten out of each corner — the shape you get when a rounded
+ * rectangle is drawn on a coarse grid. Used on buttons and the odd panel, not
+ * on everything: the point is that a few elements look *constructed* rather
+ * than every element looking square.
+ */
+.px-cut {
+  clip-path: polygon(
+    3px 0, calc(100% - 3px) 0, 100% 3px,
+    100% calc(100% - 3px), calc(100% - 3px) 100%,
+    3px 100%, 0 calc(100% - 3px), 0 3px
+  );
+  border-radius: 0 !important;
+}
+
+/* Deeper cut for larger surfaces. */
+.px-cut-lg {
+  clip-path: polygon(
+    6px 0, calc(100% - 6px) 0, 100% 6px,
+    100% calc(100% - 6px), calc(100% - 6px) 100%,
+    6px 100%, 0 calc(100% - 6px), 0 6px
+  );
+  border-radius: 0 !important;
+}
+
+/*
+ * Section divider with a pixel marker.
+ *
+ * Replaces a plain hairline: the rule fades out from both sides toward a
+ * single small square. Reads as typographic punctuation rather than a border.
+ */
+.rule-pixel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rule-pixel::before,
+.rule-pixel::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(231, 220, 203, 0.16));
+}
+
+.rule-pixel::after {
+  background: linear-gradient(90deg, rgba(231, 220, 203, 0.16), transparent);
+}
+
+/* The marker itself — a 3px square, sized on the grid. */
+.rule-pixel > span {
+  width: 3px;
+  height: 3px;
+  background: var(--color-accent, #e5715b);
+  opacity: 0.7;
+}
+
+/*
+ * Status indicator, as a pixel rather than a dot.
+ *
+ * A hard 6px square with a 2px inset highlight in its top-left, which is how a
+ * lit pixel actually looks. Circles read as generic UI; squares read as drawn
+ * on a grid.
+ */
+.px-status {
+  width: 7px;
+  height: 7px;
+  border-radius: 0;
+  position: relative;
+  box-shadow: 0 0 0 1.5px rgba(10, 6, 3, 0.75);
+}
+
+.px-status::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 2px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+/* "Playing" gets a slow pulse — the only status that is actively happening. */
+@keyframes px-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.px-live {
+  animation: px-live 2.4s ease-in-out infinite;
+}
+
+/*
+ * Corner brackets on artwork.
+ *
+ * Two L-shaped marks that snap in at opposite corners on hover, like a
+ * selection reticle. They sit *outside* the artwork so nothing is ever drawn
+ * over the cover — the brief is that the art stays clean and the UI around it
+ * carries the aesthetic.
+ */
+.px-brackets::before,
+.px-brackets::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  opacity: 0;
+  transition: opacity 200ms ease, transform 200ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.px-brackets::before {
+  top: -4px;
+  left: -4px;
+  border-top: 2px solid var(--color-accent, #e5715b);
+  border-left: 2px solid var(--color-accent, #e5715b);
+  transform: translate(3px, 3px);
+}
+
+.px-brackets::after {
+  bottom: -4px;
+  right: -4px;
+  border-bottom: 2px solid var(--color-accent, #e5715b);
+  border-right: 2px solid var(--color-accent, #e5715b);
+  transform: translate(-3px, -3px);
+}
+
+.group:hover .px-brackets::before,
+.group:hover .px-brackets::after {
+  opacity: 1;
+  transform: none;
+}
+
+/*
+ * Dithering.
+ *
+ * A 2px checkerboard, the oldest trick for faking a gradient on hardware that
+ * couldn't blend. Used as a *transition* between a lit area and the page, and
+ * masked so the checker itself dissolves — visible as texture, never as a
+ * pattern you could count.
+ */
+.dither {
+  background-image:
+    repeating-conic-gradient(
+      rgba(240, 229, 214, 0.055) 0% 25%,
+      transparent 0% 50%
+    );
+  background-size: 4px 4px;
+}
+
+.dither-fade {
+  mask-image: linear-gradient(180deg, #000, transparent);
+  -webkit-mask-image: linear-gradient(180deg, #000, transparent);
+}
+
+/* ── Personality layer ──────────────────────────────────────────────────── */
+
+.loading-dots::after {
+  content: "";
+  animation: loading-dots 1.4s steps(1, end) infinite;
+}
+
+@keyframes loading-dots {
+  0% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75% { content: "..."; }
+  100% { content: ""; }
+}
+
+/*
+ * Konami reward. A slow desaturation-and-back sweep — closer to a CRT settling
+ * than a party effect. Fires once, changes no layout.
+ */
+.konami-active {
+  animation: konami-sweep 2.4s ease-in-out 1;
+}
+
+@keyframes konami-sweep {
+  0% { filter: none; }
+  20% { filter: saturate(0.2) contrast(1.15) brightness(0.9); }
+  55% { filter: saturate(1.6) hue-rotate(-8deg); }
+  100% { filter: none; }
+}
+
+/* Content that eases in as it streams — used on shelves and the activity list. */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.rise-in {
+  animation: rise-in 500ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+/* Respect users who have asked for less motion. Everything above degrades to
+   a static end-state rather than disappearing. */
+@media (prefers-reduced-motion: reduce) {
+  .loading-dots::after { animation: none; content: "…"; }
+  .konami-active { animation: none; }
+  .rise-in { animation: none; }
+  .cover { transition: none; }
+  .group:hover .cover,
+  .cover:hover { transform: none; }
+  .meter > span { transition: none; }
+  .blink { animation: none; }
+  .ember { animation: none; }
+  .save-pop { animation: none; }
+  /* The bloom keeps its lit state but stops moving — the warmth is the point,
+     the scale-up was only ever flourish. */
+  .art-bloom { transition: none; transform: scale(1.16); }
+  .px-live { animation: none; }
+  .px-brackets::before,
+  .px-brackets::after { transition: none; }
+}
+
+/*
+ * SAVE COMPLETE. One firm scale-in, then it holds — the cadence of a console
+ * save confirmation, not a bouncy web toast.
+ */
+@keyframes save-pop {
+  0% { opacity: 0; transform: scale(0.9); }
+  55% { opacity: 1; transform: scale(1.03); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.save-pop {
+  animation: save-pop 340ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
