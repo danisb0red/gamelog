@@ -13,11 +13,13 @@ import {
   getUserLogForGame,
   getUserLists,
   getUserFavorites,
+  isGameWishlisted,
 } from "@/lib/db/queries";
 import { StarRating } from "@/components/star-rating";
 import { LogModal } from "@/components/log-modal";
 import { AddToList } from "@/components/add-to-list";
 import { FavoriteButton } from "@/components/favorite-button";
+import { WishlistButton } from "@/components/wishlist-button";
 import { Screenshots } from "@/components/screenshots";
 import type { NamedRef } from "@/lib/games/types";
 
@@ -99,6 +101,7 @@ export default async function GamePage({
   const userFavorites = user ? await getUserFavorites(user.id) : [];
   const isFavorited = userFavorites.some((f) => f.gameId === game.id);
   const favoritesFull = userFavorites.length >= 4;
+  const wishlisted = user ? await isGameWishlisted(user.id, game.id) : false;
 
   return (
     <main className="relative flex-1">
@@ -211,6 +214,16 @@ export default async function GamePage({
                 }}
                 isFavorited={isFavorited}
                 favoritesFull={favoritesFull}
+              />
+              <WishlistButton
+                game={{
+                  id: game.id,
+                  name: game.name,
+                  slug: game.slug,
+                  coverUrl: game.coverUrl,
+                  releaseYear: game.releaseYear,
+                }}
+                isWishlisted={wishlisted}
               />
               {existing && (
                 <span className="text-sm text-neutral-500">

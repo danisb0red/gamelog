@@ -112,6 +112,32 @@ export const favorites = pgTable(
   (t) => [unique().on(t.userId, t.gameId)],
 );
 
+/**
+ * Wishlist — games a user wants to play but has no relationship with yet.
+ *
+ * Deliberately its own table rather than a sixth `logs.status`. A wishlisted
+ * game has no rating, platform or play date, and everything that reads the
+ * shelf, the diary and the rating aggregates iterates `STATUSES` — so a new
+ * status would leak "want to play" into all of them. A separate table keeps
+ * the count separate by construction.
+ */
+export const wishlist = pgTable(
+  "wishlist",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    gameId: bigint("game_id", { mode: "number" })
+      .notNull()
+      .references(() => games.id, { onDelete: "cascade" }),
+    // No position: a wishlist isn't curated, it's accumulated. Ordered newest
+    // first instead.
+    addedAt: timestamp("added_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [unique().on(t.userId, t.gameId)],
+);
+
 export type Profile = typeof profiles.$inferSelect;
 export type Game = typeof games.$inferSelect;
 export type Log = typeof logs.$inferSelect;

@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { db } from "./index";
-import { favorites, games, listItems, lists, logs, profiles } from "./schema";
+import { favorites, games, listItems, lists, logs, profiles, wishlist } from "./schema";
 
 /** A user's favorite games (max 4), in order. */
 export async function getUserFavorites(userId: string) {
@@ -17,6 +17,36 @@ export async function getUserFavorites(userId: string) {
     .innerJoin(games, eq(favorites.gameId, games.id))
     .where(eq(favorites.userId, userId))
     .orderBy(asc(favorites.position));
+}
+
+/** Games a user has wishlisted, newest first. */
+export async function getUserWishlist(userId: string) {
+  return db
+    .select({
+      gameId: games.id,
+      gameName: games.name,
+      gameSlug: games.slug,
+      coverUrl: games.coverUrl,
+      releaseYear: games.releaseYear,
+    })
+    .from(wishlist)
+    .innerJoin(games, eq(wishlist.gameId, games.id))
+    .where(eq(wishlist.userId, userId))
+    .orderBy(desc(wishlist.addedAt));
+}
+
+/**
+ * Whether one game is on a user's wishlist. A separate query rather than a
+ * scan of getUserWishlist because a wishlist has no cap and the game page only
+ * needs the one answer.
+ */
+export async function isGameWishlisted(userId: string, gameId: number) {
+  const [row] = await db
+    .select({ id: wishlist.id })
+    .from(wishlist)
+    .where(and(eq(wishlist.userId, userId), eq(wishlist.gameId, gameId)))
+    .limit(1);
+  return row != null;
 }
 
 /** All lists owned by a user, with item count and up to 4 cover thumbnails. */

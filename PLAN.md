@@ -206,6 +206,20 @@ asked for a name stored the **whole email address**, so the upsert heals those
 on next sign-in — matching only null-or-contains-`@`, so a real chosen name is
 never overwritten.
 
+### Wishlist
+Its own `wishlist` table, **not** a sixth value in `logs.status`. A wishlisted
+game has no rating, platform or play date, and the shelf, the diary and the
+rating aggregates all iterate `STATUSES` — a new status would leak "want to
+play" into every one of them. The separate table keeps the count separate by
+construction; `src/lib/status.ts` is untouched.
+Applied to prod with `scripts/add-wishlist.ts --apply` (idempotent, dry-run by
+default): table + unique(user_id, game_id) + index + RLS with the same three
+policies `favorites` has. Boundary-tested, not just configured — anon read 200,
+anon insert 42501, forging another user's row 42501, own row 201/204.
+Surfaces: a toggle in the game page action row (beside Log / Add to list /
+Favorite), a fourth `wishlist` stat on the profile header, and its own profile
+section above the shelf. No `/api/v1/wishlist` yet — the iOS app is deferred.
+
 ### Sign-in must leave the page with a full document load
 `/login` sits under the root layout, and the header is *in* the root layout.
 A client-side `router.push("/")` is a shared-layout transition, so Next keeps

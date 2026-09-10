@@ -4,11 +4,13 @@ import { ShelfBrowser } from "@/components/shelf-browser";
 import { ListCards } from "@/components/list-cards";
 import { CreateListModal } from "@/components/create-list-modal";
 import { Favorites } from "@/components/favorites";
+import { Wishlist } from "@/components/wishlist";
 import {
   getProfileByUsername,
   getUserGames,
   getUserLists,
   getUserFavorites,
+  getUserWishlist,
 } from "@/lib/db/queries";
 import { getUser } from "@/lib/auth";
 import { isStatus } from "@/lib/status";
@@ -28,10 +30,11 @@ export default async function ProfilePage({
   const profile = await getProfileByUsername(username);
   if (!profile) notFound();
 
-  const [all, userLists, userFavorites, viewer] = await Promise.all([
+  const [all, userLists, userFavorites, userWishlist, viewer] = await Promise.all([
     getUserGames(profile.id),
     getUserLists(profile.id),
     getUserFavorites(profile.id),
+    getUserWishlist(profile.id),
     getUser(),
   ]);
   const isOwner = viewer?.id === profile.id;
@@ -105,11 +108,14 @@ export default async function ProfilePage({
               </p>
             </div>
 
-            <div className="ml-auto flex gap-9">
+            {/* Wishlist sits beside the collection numbers but is not one of
+                them: it counts games that aren't on the shelf. */}
+            <div className="ml-auto flex flex-wrap gap-x-9 gap-y-5">
               {[
                 { v: String(all.length), c: "games" },
                 { v: String(rated.length), c: "rated" },
                 { v: avg ? avg.toFixed(1) : "—", c: "average" },
+                { v: String(userWishlist.length), c: "wishlist" },
               ].map((s) => (
                 <div key={s.c}>
                   <p className="font-display text-3xl font-semibold leading-none text-neutral-100">
@@ -188,6 +194,8 @@ export default async function ProfilePage({
             <ListCards lists={userLists} />
           </section>
         )}
+
+        <Wishlist games={userWishlist} isOwner={isOwner} />
 
         {/* Filtering happens on the client — see ShelfBrowser. The whole
             collection is already loaded for the counts, so switching tabs
