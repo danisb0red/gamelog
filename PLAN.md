@@ -206,6 +206,17 @@ asked for a name stored the **whole email address**, so the upsert heals those
 on next sign-in — matching only null-or-contains-`@`, so a real chosen name is
 never overwritten.
 
+### Sign-in must leave the page with a full document load
+`/login` sits under the root layout, and the header is *in* the root layout.
+A client-side `router.push("/")` is a shared-layout transition, so Next keeps
+the layout mounted rather than re-rendering it — the header stayed signed-out
+("Sign in" still showing, no Shelf/Diary) until something else forced a
+refresh, e.g. logging a game. `router.refresh()` does re-render layouts, but it
+refreshes the route you are *still on*, and racing it against a push is why the
+bug was intermittent. `login-form.tsx` now uses `window.location.assign("/")`.
+Sign-out never had the bug because it is a plain form POST — a real navigation.
+**If you ever add another client-side auth transition, do the same.**
+
 ### Shelf filtering
 `ShelfBrowser` (`src/components/shelf-browser.tsx`) owns status + platform
 state on the client. The tabs used to be `<Link href="?status=…">`, i.e. a full

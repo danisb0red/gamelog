@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "signin" | "signup";
 
 export function LoginForm() {
-  const router = useRouter();
   const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -39,19 +37,40 @@ export function LoginForm() {
         if (!data.session) {
           setMessage("Check your email to confirm your account, then sign in.");
           setMode("signin");
+          setBusy(false);
           return;
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-      router.refresh();
-      router.push("/");
+      /*
+        Leave the page the hard way, on purpose.
+
+        The header is rendered by the root layout, and /login sits under that
+        same layout — so a client-side router.push("/") is a *shared-layout*
+        transition and Next deliberately keeps the layout mounted rather than
+        re-rendering it. The header therefore kept its signed-out render: the
+        "Sign in" button stayed, and Shelf/Diary never appeared. router.refresh()
+        does re-render layouts, but it refreshes the route you are still on, and
+        racing it against a push to another route is why this only bit
+        *sometimes* — the symptom cleared later because logging a game calls
+        router.refresh() with no navigation racing it.
+
+        A full document load re-runs the layout against the session cookie the
+        browser client just wrote, which cannot be stale. Sign-in happens once
+        per session, so the cost is irrelevant, and this is what sign-out has
+        always done (a plain form POST) — which is why sign-out never had the bug.
+      */
+      window.location.assign("/");
+      return;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
       setBusy(false);
+      return;
     }
+    // No `finally` resetting `busy`: on the success path the document is on its
+    // way out and the button should stay disabled until it goes.
   }
 
   return (
