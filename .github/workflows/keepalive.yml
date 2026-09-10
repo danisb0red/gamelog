@@ -1,0 +1,45 @@
+name: Keep Supabase awake
+
+# Supabase's free tier pauses a project after 7 days with no activity, and a
+# paused project does NOT wake on its own — someone has to click Restore in the
+# dashboard, and until they do the site returns 500s. This project has already
+# paused three times during development.
+#
+# One cheap query a day is enough to reset that timer. Runs in well under a
+# minute, so it costs a rounding error of the free Actions allowance.
+on:
+  schedule:
+    # 04:17 UTC — deliberately not on the hour, when GitHub's scheduler is
+    # busiest and jobs get delayed.
+    - cron: "17 4 * * *"
+  workflow_dispatch: # so it can be triggered by hand to test
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Query the database
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
+            echo "::error::Missing SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY repo secret"
+            exit 1
+          fi
+
+          # A real read against a real table. Hitting /auth/v1/health would not
+          # count as database activity, which is what the pause timer tracks.
+          code=$(curl -s -o /tmp/out.txt -w "%{http_code}" --max-time 30 \
+            "$SUPABASE_URL/rest/v1/games?select=id&limit=1" \
+            -H "apikey: $SUPABASE_KEY")
+
+          echo "HTTP $code"
+          cat /tmp/out.txt
+
+          if [ "$code" != "200" ]; then
+            echo "::error::Database did not respond with 200 — it may already be paused."
+            exit 1
+          fi
+          echo "Database is awake."
