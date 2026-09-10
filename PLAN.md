@@ -4,10 +4,19 @@ Living document. Updated as work lands. Status legend: ☐ todo · ◐ in progre
 
 ---
 
-## Goal
+## Goal — CHANGED 2026-09-11
 
-A real, installable iOS app backed by live data, sharing the existing Supabase
-backend with the web app. The web app stays working throughout.
+**Launch the web app for $0. Defer the iOS app until there are users.**
+
+Budget went to zero, and the App Store's $99/yr buys *distribution only* — the
+web app is already feature-complete without it. A PWA manifest means people can
+Add to Home Screen on iOS and get an icon and a full-screen app with no Apple
+account, no review queue and no fee.
+
+This is a return to the project's original June plan ("Web/PWA first, chosen for
+$0 cost"). **None of the iOS work is wasted** — it's committed and working, and
+the `/api/v1` surface plus RLS were built for it. Resume when there's a reason
+to spend $99.
 
 ## Architecture (decided)
 
@@ -160,6 +169,49 @@ labels, screenshots, TestFlight. Tracked in the audit, not here.
   anon *cannot* insert, an authenticated user *cannot* forge a row under
   another user's id (`42501` both times). Web app unaffected — it connects as
   `postgres`, which has BYPASSRLS.
+
+---
+
+## CURRENT STATE (2026-09-11) — start here if resuming
+
+Repo: **github.com/danisb0red/gamelog** (private)
+Branch: `build/gamelog-web-and-ios` · `main` is still the empty CRA skeleton
+
+### Done
+- ☑ Everything committed and pushed (3 commits)
+- ☑ DB hardened: RLS on 6 tables / 21 policies, 6 indexes,
+  `profiles.id → auth.users` FK. Boundary verified, not just configured.
+- ☑ Mobile nav on the web header (was `hidden md:flex` — phones had no nav)
+- ☑ PWA manifest + icons + `viewport` export → installable on iOS
+- ☑ iOS app builds natively and works (deferred, not abandoned)
+
+### In progress — web launch
+- ☐ **Restore Supabase** — it paused again (26 days idle, NXDOMAIN). Free-tier
+  projects do **not** auto-wake; you must click Restore in the dashboard.
+- ☐ Create the Vercel project (Hobby, free). **Add env vars before the first
+  build** — `src/lib/db/index.ts` throws without `DATABASE_URL`, so the build
+  fails otherwise.
+- ☐ After deploy: add the Vercel URL to Supabase → Authentication → URL
+  Configuration, or sign-in redirects break.
+- ☐ Keep-alive cron (GitHub Actions, free) so the DB never idles 7 days
+- ☐ Wire `igdb_cache` table into the provider (table exists; provider still
+  uses a module-level Map, which is cold on every serverless instance)
+
+### Vercel environment variables (values are in `.env.local`, never committed)
+```
+DATABASE_URL                          (transaction pooler, port 6543)
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+SUPABASE_SECRET_KEY
+TWITCH_CLIENT_ID
+TWITCH_CLIENT_SECRET
+GAMES_PROVIDER=igdb
+RAWG_API_KEY                          (fallback provider, optional)
+```
+
+### Deferred to when there's $99
+Apple Developer enrolment, account deletion, privacy policy, real bundle ID,
+app icon, TestFlight. All tracked in the audit.
 
 ## Known risks
 - Supabase free tier auto-pauses (hit twice) — production needs Pro.
