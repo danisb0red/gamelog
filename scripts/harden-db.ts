@@ -142,7 +142,8 @@ async function main() {
   if (APPLY) {
     const rls = await sql`select count(*)::int n from pg_class c join pg_namespace ns on ns.oid=c.relnamespace where ns.nspname='public' and c.relkind='r' and c.relrowsecurity`;
     const pol = await sql`select count(*)::int n from pg_policies where schemaname='public'`;
-    console.log(`\nRLS enabled on ${(rls as { n: number }[])[0].n}/6 tables, ${(pol as { n: number }[])[0].n} policies.`);
+    const n = (r: unknown) => (r as unknown as { n: number }[])[0].n;
+    console.log(`\nRLS enabled on ${n(rls)}/6 tables, ${n(pol)} policies.`);
   } else {
     console.log("\nRe-run with --apply to write.");
   }

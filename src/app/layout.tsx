@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Figtree, Space_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { AppHeader } from "@/components/app-header";
@@ -29,6 +29,22 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: "GameLog",
   description: "Track, rate, and review the games you play.",
+  // Lets iOS render the home-screen app full-screen with a dark status bar
+  // instead of a white browser chrome.
+  appleWebApp: { capable: true, title: "GameLog", statusBarStyle: "black-translucent" },
+};
+
+/**
+ * `viewport` is a separate export from `metadata` in Next 16 — putting
+ * themeColor in `metadata` is deprecated and silently ignored.
+ *
+ * `viewportFit: "cover"` lets the page paint into the notch and home-indicator
+ * areas, which is required for an installed PWA not to letterbox itself.
+ */
+export const viewport: Viewport = {
+  themeColor: "#15110c",
+  colorScheme: "dark",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

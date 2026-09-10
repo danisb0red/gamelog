@@ -73,6 +73,29 @@ export async function AppHeader() {
           )}
         </div>
       </div>
+
+      {/*
+        Mobile navigation.
+
+        The row above collapses its nav at `md`, which left phones with no way
+        to reach the shelf or diary at all — and phones are most of the traffic
+        for a site like this. Rather than a hamburger (a tap to reveal three
+        links), the destinations sit on a second row: always visible, thumb
+        height, and it costs 36px.
+      */}
+      {nav.length > 0 && (
+        <nav className="flex items-center gap-6 overflow-x-auto border-t border-neutral-800/50 px-5 py-2.5 md:hidden">
+          {nav.map((n) => (
+            <Link
+              key={n.href}
+              href={n.href}
+              className="shrink-0 font-mono text-[11px] uppercase tracking-[0.18em] text-neutral-400 transition-colors active:text-accent"
+            >
+              {n.label}
+            </Link>
+          ))}
+        </nav>
+      )}
     </header>
   );
 }

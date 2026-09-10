@@ -2,6 +2,7 @@ import {
   bigint,
   boolean,
   integer,
+  jsonb,
   numeric,
   pgTable,
   text,
@@ -116,3 +117,17 @@ export type Game = typeof games.$inferSelect;
 export type Log = typeof logs.$inferSelect;
 export type List = typeof lists.$inferSelect;
 export type ListItem = typeof listItems.$inferSelect;
+
+/**
+ * Shared IGDB response cache.
+ *
+ * Lives in Postgres rather than in memory because serverless gives every
+ * instance its own heap: an in-process Map is cold on every scale-out and
+ * every deploy, so IGDB gets hit far more than the 4 req/s free tier allows.
+ * A shared table means one instance's fetch warms the cache for all of them.
+ */
+export const igdbCache = pgTable("igdb_cache", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
