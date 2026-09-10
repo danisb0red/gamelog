@@ -30,5 +30,12 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  // "mobile" is the Expo app: a separate project with its own tsconfig and its
+  // own node_modules. Without excluding it, `next build` type-checks React
+  // Native sources against the web app's dependency tree — which works locally
+  // (mobile/node_modules exists) but fails on any CI that installs only the
+  // root package.json: "Cannot find module 'react-native'".
+  //
+  // The mobile app is still type-checked, just on its own: cd mobile && tsc.
+  "exclude": ["node_modules", "mobile"]
 }
