@@ -9,6 +9,7 @@ type Mode = "signin" | "signup";
 export function LoginForm() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("signin");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -24,7 +25,15 @@ export function LoginForm() {
 
     try {
       if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        // The name is stored on the auth user, not written straight to the
+        // profiles table, because sign-up may not produce a session yet (email
+        // confirmation). Keeping it in user_metadata means ensureProfile can
+        // pick it up whenever the user actually arrives.
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { display_name: name.trim() } },
+        });
         if (error) throw error;
         // If email confirmation is on, there's no session yet.
         if (!data.session) {
@@ -47,6 +56,18 @@ export function LoginForm() {
 
   return (
     <form onSubmit={submit} className="space-y-3">
+      {mode === "signup" && (
+        <input
+          type="text"
+          required
+          maxLength={60}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Your name"
+          autoComplete="name"
+          className="w-full rounded-sm border border-neutral-800 bg-surface-1 px-3.5 py-3 text-base text-neutral-100 outline-none transition-colors placeholder:text-neutral-600 focus:border-accent"
+        />
+      )}
       <input
         type="email"
         required

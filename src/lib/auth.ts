@@ -1,6 +1,7 @@
 import "server-only";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "./supabase/server";
+import { isNull, like, or } from "drizzle-orm";
 import { db } from "./db";
 import { profiles } from "./db/schema";
 
@@ -19,14 +20,48 @@ export async function getUser(): Promise<User | null> {
  * logs (which FK to profiles) line up with the real account.
  */
 export async function ensureProfile(user: User): Promise<void> {
-  await db
-    .insert(profiles)
-    .values({
-      id: user.id,
-      username: `user_${user.id.slice(0, 8)}`,
-      displayName: user.email ?? null,
-    })
-    .onConflictDoNothing();
+  const displayName = displayNameFor(user);
+
+  const insert = db.insert(profiles).values({
+    id: user.id,
+    username: `user_${user.id.slice(0, 8)}`,
+    displayName,
+  });
+
+  if (!displayName) {
+    await insert.onConflictDoNothing();
+    return;
+  }
+
+  // Accounts created before sign-up asked for a name stored the raw email
+  // address as the display name, so profiles read "someone@gmail.com" on a
+  // public page. Heal those on next sign-in — but only those: the condition
+  // deliberately matches an empty name or one that still looks like an email,
+  // so a name the user has actually chosen is never overwritten. Once healed
+  // the row stops matching, and this becomes a plain no-op upsert.
+  await insert.onConflictDoUpdate({
+    target: profiles.id,
+    set: { displayName },
+    setWhere: or(isNull(profiles.displayName), like(profiles.displayName, "%@%")),
+  });
+}
+
+/**
+ * A human name for a user.
+ *
+ * Sign-up collects one and stores it in `user_metadata.display_name`. When it's
+ * missing — accounts created before the field existed, or a provider that
+ * doesn't supply one — fall back to the local part of the email rather than the
+ * whole address: showing "someone@gmail.com" as a display name looks like a bug,
+ * and it leaks an email address onto a public profile page.
+ */
+function displayNameFor(user: User): string | null {
+  const meta = user.user_metadata as { display_name?: unknown } | null;
+  const given = typeof meta?.display_name === "string" ? meta.display_name.trim() : "";
+  if (given) return given.slice(0, 60);
+
+  const local = user.email?.split("@")[0]?.trim();
+  return local || null;
 }
 
 /**

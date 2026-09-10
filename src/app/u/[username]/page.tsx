@@ -1,11 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { GamesGrid } from "@/components/games-grid";
-import { StatusTabs } from "@/components/status-tabs";
+import { ShelfBrowser } from "@/components/shelf-browser";
 import { ListCards } from "@/components/list-cards";
 import { CreateListModal } from "@/components/create-list-modal";
 import { Favorites } from "@/components/favorites";
-import { PlatformFilter } from "@/components/platform-filter";
 import {
   getProfileByUsername,
   getUserGames,
@@ -13,7 +11,7 @@ import {
   getUserFavorites,
 } from "@/lib/db/queries";
 import { getUser } from "@/lib/auth";
-import { STATUSES, isStatus } from "@/lib/status";
+import { isStatus } from "@/lib/status";
 import { PixelMemoryCard } from "@/components/pixel";
 
 export const dynamic = "force-dynamic";
@@ -42,20 +40,12 @@ export default async function ProfilePage({
   const platformOptions = [...new Set(all.map((g) => g.platform).filter(Boolean))].sort() as string[];
   const activePlatform = platform && platformOptions.includes(platform) ? platform : "";
 
-  // Apply the platform filter first, then derive status counts from that subset.
-  const platformFiltered = activePlatform
-    ? all.filter((g) => g.platform === activePlatform)
-    : all;
-
-  const counts: Record<string, number> = { all: platformFiltered.length };
-  for (const s of STATUSES) counts[s] = 0;
-  for (const g of platformFiltered) counts[g.status] = (counts[g.status] ?? 0) + 1;
-
+  // Only the *initial* tab comes from the URL; ShelfBrowser owns it after that.
   const active = isStatus(status) ? status : "all";
-  const filtered =
-    active === "all"
-      ? platformFiltered
-      : platformFiltered.filter((g) => g.status === active);
+
+  // Header stat, deliberately over the whole collection: the save-file panel
+  // describes the account, not whatever the shelf below is currently filtered to.
+  const finishedCount = all.filter((g) => g.status === "finished").length;
 
   const rated = all.filter((g) => g.rating != null);
   const avg =
@@ -151,7 +141,7 @@ export default async function ProfilePage({
                   { k: "Last save", v: lastSave },
                   {
                     k: "Completed",
-                    v: `${counts.finished ?? 0} of ${all.length}`,
+                    v: `${finishedCount} of ${all.length}`,
                   },
                   { k: "Most played on", v: topPlatform },
                 ].map((f) => (
@@ -199,30 +189,15 @@ export default async function ProfilePage({
           </section>
         )}
 
-        <section>
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="font-display text-2xl font-semibold tracking-tight text-neutral-100">
-                Shelf
-                <span className="ml-2.5 font-mono text-sm font-normal text-neutral-500">
-                  {String(filtered.length).padStart(2, "0")}
-                </span>
-              </h2>
-            </div>
-            <PlatformFilter platforms={platformOptions} current={activePlatform} />
-          </div>
-
-          <div className="mb-7">
-            <StatusTabs
-              username={profile.username}
-              active={active}
-              counts={counts}
-              platform={activePlatform}
-            />
-          </div>
-
-          <GamesGrid games={filtered} status={active} />
-        </section>
+        {/* Filtering happens on the client — see ShelfBrowser. The whole
+            collection is already loaded for the counts, so switching tabs
+            needs no navigation, no skeleton flash and no scroll reset. */}
+        <ShelfBrowser
+          games={all}
+          platforms={platformOptions}
+          initialStatus={active}
+          initialPlatform={activePlatform}
+        />
       </div>
     </main>
   );

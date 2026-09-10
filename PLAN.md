@@ -184,18 +184,37 @@ Branch: `build/gamelog-web-and-ios` · `main` is still the empty CRA skeleton
 - ☑ Mobile nav on the web header (was `hidden md:flex` — phones had no nav)
 - ☑ PWA manifest + icons + `viewport` export → installable on iOS
 - ☑ iOS app builds natively and works (deferred, not abandoned)
+- ☑ **Deployed:** https://gamelog-liard.vercel.app (Vercel Hobby, free)
+- ☑ Keep-alive cron (`.github/workflows/keepalive.yml`, daily) so the DB never
+  idles 7 days and pauses itself
+- ☑ Sign-up collects a **name**, shown instead of the email address
+- ☑ Shelf filters are client-side — no reload, no scroll jump
 
 ### In progress — web launch
-- ☐ **Restore Supabase** — it paused again (26 days idle, NXDOMAIN). Free-tier
-  projects do **not** auto-wake; you must click Restore in the dashboard.
-- ☐ Create the Vercel project (Hobby, free). **Add env vars before the first
-  build** — `src/lib/db/index.ts` throws without `DATABASE_URL`, so the build
-  fails otherwise.
-- ☐ After deploy: add the Vercel URL to Supabase → Authentication → URL
-  Configuration, or sign-in redirects break.
-- ☐ Keep-alive cron (GitHub Actions, free) so the DB never idles 7 days
 - ☐ Wire `igdb_cache` table into the provider (table exists; provider still
-  uses a module-level Map, which is cold on every serverless instance)
+  uses a module-level Map, which is cold on every serverless instance).
+  Cold `/` was 6.9s.
+- ☐ Optionally merge `build/gamelog-web-and-ios` → `main`
+- ☐ No way to *edit* a display name after sign-up yet — the only paths in are
+  sign-up and the email-local-part fallback.
+
+### Display names
+`ensureProfile` (`src/lib/auth.ts`) resolves a name in this order:
+`user_metadata.display_name` (set at sign-up) → the local part of the email →
+null (the page then falls back to `@username`). Rows written before sign-up
+asked for a name stored the **whole email address**, so the upsert heals those
+on next sign-in — matching only null-or-contains-`@`, so a real chosen name is
+never overwritten.
+
+### Shelf filtering
+`ShelfBrowser` (`src/components/shelf-browser.tsx`) owns status + platform
+state on the client. The tabs used to be `<Link href="?status=…">`, i.e. a full
+server navigation per tap, which flashed `loading.tsx` and reset scroll to the
+top. The whole collection is already fetched for the counts, so filtering is
+local and instant; the URL is kept shareable via `history.replaceState`, which
+does not navigate. The server still reads `?status`/`?platform` for the
+*initial* render, so deep links and SSR still work.
+`status-tabs.tsx` and `platform-filter.tsx` were deleted — folded into this.
 
 ### Vercel environment variables (values are in `.env.local`, never committed)
 ```
