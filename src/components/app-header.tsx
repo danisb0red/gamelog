@@ -3,6 +3,7 @@ import { getUser, ensureProfile } from "@/lib/auth";
 import { getProfileById } from "@/lib/db/queries";
 import { HeaderSearch } from "./header-search";
 import { ProfileMenu } from "./profile-menu";
+import { BottomNav } from "./bottom-nav";
 
 /**
  * Persistent top bar.
@@ -12,6 +13,11 @@ import { ProfileMenu } from "./profile-menu";
  * rather than a solid border. Nav labels are the user's own sections (SHELF,
  * DIARY) rather than product nouns — the site is addressed to one person about
  * their own collection.
+ *
+ * On phones this is one row and one row only. The destinations moved to the
+ * BottomNav tab bar (thumb reach, always-visible current section) and search
+ * moved to /search, which gave the header back the ~140px it was squeezing the
+ * search box into.
  */
 export async function AppHeader() {
   const user = await getUser();
@@ -30,8 +36,9 @@ export async function AppHeader() {
     : [];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-neutral-800/70 bg-surface-0/85 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center gap-5 px-5 py-3.5">
+    <>
+    <header className="safe-t sticky top-0 z-40 border-b border-neutral-800/70 bg-surface-0/85 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-6xl items-center gap-5 px-5 py-3">
         <Link href="/" className="group flex shrink-0 items-center gap-2.5">
           {/* Cartridge mark: a notched block. Reads as an object, not an icon set. */}
           <span
@@ -56,9 +63,14 @@ export async function AppHeader() {
           ))}
         </nav>
 
-        <div className="flex flex-1 justify-end md:justify-center">
+        <div className="hidden flex-1 justify-center md:flex">
           <HeaderSearch />
         </div>
+
+        {/* Phones push everything else to the right edge; the search box that
+            used to sit here had ~140px and clipped its own placeholder, so it
+            became a tab instead. */}
+        <div className="flex-1 md:hidden" />
 
         <div className="shrink-0">
           {profile ? (
@@ -74,28 +86,11 @@ export async function AppHeader() {
         </div>
       </div>
 
-      {/*
-        Mobile navigation.
-
-        The row above collapses its nav at `md`, which left phones with no way
-        to reach the shelf or diary at all — and phones are most of the traffic
-        for a site like this. Rather than a hamburger (a tap to reveal three
-        links), the destinations sit on a second row: always visible, thumb
-        height, and it costs 36px.
-      */}
-      {nav.length > 0 && (
-        <nav className="flex items-center gap-6 overflow-x-auto border-t border-neutral-800/50 px-5 py-2.5 md:hidden">
-          {nav.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="shrink-0 font-mono text-[11px] uppercase tracking-[0.18em] text-neutral-400 transition-colors active:text-accent"
-            >
-              {n.label}
-            </Link>
-          ))}
-        </nav>
-      )}
     </header>
+
+    {/* Rendered here rather than in the layout so it shares the header's
+        already-resolved profile — one auth round trip, not two. */}
+    <BottomNav username={profile?.username ?? null} />
+    </>
   );
 }

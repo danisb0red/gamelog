@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { StarRating } from "./star-rating";
 import { PixelSave } from "./pixel";
+import { SheetOverlay, SheetGrip } from "./sheet";
 
 type GameInput = {
   id: number;
@@ -38,12 +39,6 @@ export function LogModal({
 }) {
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
 
   return (
     <>
@@ -55,24 +50,20 @@ export function LogModal({
         {existing ? "Edit your log" : "Log, rate, review"}
       </button>
 
-      {open && (
+      <SheetOverlay open={open} onClose={() => setOpen(false)} className="sm:pt-[10vh]">
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-[10vh]"
-          onClick={() => setOpen(false)}
+          className="sheet px-cut-lg w-full max-w-md overflow-y-auto bg-surface-2 p-5 shadow-2xl ring-1 ring-neutral-800"
+          onClick={(e) => e.stopPropagation()}
         >
-          <div
-            className="px-cut-lg w-full max-w-md bg-surface-2 p-5 shadow-2xl ring-1 ring-neutral-800"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <LogForm
-              game={game}
-              platforms={platforms}
-              existing={existing}
-              onDone={() => setOpen(false)}
-            />
-          </div>
+          <SheetGrip />
+          <LogForm
+            game={game}
+            platforms={platforms}
+            existing={existing}
+            onDone={() => setOpen(false)}
+          />
         </div>
-      )}
+      </SheetOverlay>
     </>
   );
 }

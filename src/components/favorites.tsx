@@ -43,7 +43,7 @@ export function Favorites({
   const slots = [0, 1, 2, 3];
 
   return (
-    <section className="mb-12 py-2">
+    <section className="mb-10 py-2 sm:mb-12">
       <div className="mb-5 flex items-end justify-between">
         <h2 className="font-display text-2xl font-semibold tracking-tight text-neutral-100">
           Favorites

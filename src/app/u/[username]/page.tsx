@@ -84,23 +84,23 @@ export default async function ProfilePage({
         <div className="ambient" style={{ backgroundImage: `url(${identityArt})` }} />
       )}
 
-      <div className="mx-auto w-full max-w-6xl px-5 pb-20">
+      <div className="mx-auto w-full max-w-6xl px-5 pb-16 sm:pb-20">
         {/* ── Identity card ──────────────────────────────────────────────
             A save-file header rather than a social-media profile: monogram
             plate, handle in mono, and the three headline numbers set large. */}
-        <header className="pt-16">
+        <header className="pt-8 sm:pt-16">
           <span className="hud-label">Save file</span>
 
-          <div className="mt-5 flex flex-wrap items-end gap-x-7 gap-y-6">
+          <div className="mt-4 flex flex-wrap items-end gap-x-5 gap-y-5 sm:mt-5 sm:gap-x-7 sm:gap-y-6">
             <div
-              className="flex h-20 w-20 shrink-0 items-center justify-center bg-accent font-display text-3xl font-bold text-accent-foreground"
+              className="flex h-14 w-14 shrink-0 items-center justify-center bg-accent font-display text-2xl font-bold text-accent-foreground sm:h-20 sm:w-20 sm:text-3xl"
               style={{ clipPath: "polygon(0 0,100% 0,100% 76%,76% 100%,0 100%)" }}
             >
               {(profile.displayName ?? profile.username).charAt(0).toUpperCase()}
             </div>
 
             <div className="min-w-0">
-              <h1 className="font-display text-4xl font-bold tracking-tight text-neutral-50 sm:text-5xl">
+              <h1 className="font-display text-3xl font-bold tracking-tight text-neutral-50 sm:text-5xl">
                 {profile.displayName ?? profile.username}
               </h1>
               <p className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-neutral-400">
@@ -110,18 +110,18 @@ export default async function ProfilePage({
 
             {/* Wishlist sits beside the collection numbers but is not one of
                 them: it counts games that aren't on the shelf. */}
-            <div className="ml-auto flex flex-wrap gap-x-9 gap-y-5">
+            <div className="flex w-full gap-x-4 gap-y-5 sm:ml-auto sm:w-auto sm:flex-wrap sm:gap-x-9">
               {[
                 { v: String(all.length), c: "games" },
                 { v: String(rated.length), c: "rated" },
                 { v: avg ? avg.toFixed(1) : "—", c: "average" },
                 { v: String(userWishlist.length), c: "wishlist" },
               ].map((s) => (
-                <div key={s.c}>
-                  <p className="font-display text-3xl font-semibold leading-none text-neutral-100">
+                <div key={s.c} className="min-w-0 flex-1 sm:flex-none">
+                  <p className="font-display text-2xl font-semibold leading-none text-neutral-100 sm:text-3xl">
                     {s.v}
                   </p>
-                  <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.15em] text-neutral-400">
+                  <p className="mt-1.5 truncate font-mono text-[9px] uppercase tracking-[0.1em] text-neutral-400 sm:text-[10px] sm:tracking-[0.15em]">
                     {s.c}
                   </p>
                 </div>
@@ -138,11 +138,17 @@ export default async function ProfilePage({
             unlabelled on purpose: a small object sitting beside save data, for
             anyone who recognises it.
           */}
-          <div className="mt-8 border-t border-neutral-800/70 pt-5">
+          <div className="mt-6 border-t border-neutral-800/70 pt-5 sm:mt-8">
             <div className="flex flex-wrap items-start gap-x-10 gap-y-5">
-              <PixelMemoryCard size={24} className="mt-1 shrink-0 text-neutral-700" />
+              {/* The hiding has to happen on a wrapper. PixelMemoryCard hardcodes
+                  `inline-block`, and Tailwind emits `.inline-block` *after*
+                  `.hidden` in the same layer — so `hidden` on the glyph itself
+                  silently loses and the mark stayed visible on phones. */}
+              <span className="hidden sm:block">
+                <PixelMemoryCard size={24} className="mt-1 shrink-0 text-neutral-700" />
+              </span>
 
-              <dl className="flex flex-wrap gap-x-10 gap-y-4">
+              <dl className="grid flex-1 grid-cols-2 gap-x-4 gap-y-4 sm:flex sm:flex-wrap sm:gap-x-10">
                 {[
                   { k: "Last save", v: lastSave },
                   {
@@ -161,30 +167,33 @@ export default async function ProfilePage({
               </dl>
 
               {/* Print registration mark — an artefact from the manual this page
-                  is pretending to be. Easy to never notice. */}
-              <span
-                className="reg-mark ml-auto mt-1.5 hidden text-neutral-700 sm:inline-block"
-                aria-hidden="true"
-              />
+                  is pretending to be. Easy to never notice.
+
+                  Same trap as the glyph above, for a different reason: `.reg-mark`
+                  is unlayered CSS and sets its own `display`, so it beats any
+                  Tailwind utility no matter the order. Hence the wrapper. */}
+              <span className="ml-auto hidden sm:block" aria-hidden="true">
+                <span className="reg-mark mt-1.5 text-neutral-700" />
+              </span>
             </div>
           </div>
 
           <Link
             href={`/u/${profile.username}/diary`}
-            className="mt-7 inline-block font-mono text-[11px] uppercase tracking-[0.15em] text-accent transition hover:brightness-125"
+            className="mt-6 inline-block sm:mt-7 font-mono text-[11px] uppercase tracking-[0.15em] text-accent transition hover:brightness-125"
           >
             Read the diary →
           </Link>
         </header>
 
-        <div className="rule-pixel mt-10" aria-hidden="true">
+        <div className="rule-pixel mt-8 sm:mt-10" aria-hidden="true">
           <span />
         </div>
 
         <Favorites favorites={userFavorites} isOwner={isOwner} />
 
         {(userLists.length > 0 || isOwner) && (
-          <section className="mb-12">
+          <section className="mb-10 sm:mb-12">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="font-display text-2xl font-semibold tracking-tight text-neutral-100">
                 Lists

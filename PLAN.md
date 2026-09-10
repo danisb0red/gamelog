@@ -206,6 +206,41 @@ asked for a name stored the **whole email address**, so the upsert heals those
 on next sign-in — matching only null-or-contains-`@`, so a real chosen name is
 never overwritten.
 
+### Phones
+The site was laid out for a desktop and left to reflow, which read as a tall web
+page rather than something you hold. What changed, and why it has to stay:
+
+- **Tab bar** (`bottom-nav.tsx`), rendered by `AppHeader` so it reuses the
+  already-resolved profile. Replaces the second header row, which put the
+  destinations in the furthest corner from your thumb and cost 36px on every
+  page. Hidden from `md`.
+- **`/search`** is a real screen. The header's search box had ~140px on a phone
+  and clipped its own placeholder; it is now `hidden md:flex`.
+- **Sheets** (`sheet.tsx`). Modals slide up from the bottom edge on phones.
+  `SheetOverlay` **portals to `<body>`** — this is load-bearing: the layout wraps
+  pages in `relative z-[2]` (to clear the fixed grain at z-1), which is a
+  stacking context, so a modal rendered inside it could never out-rank the tab
+  bar at z-50 no matter its z-index.
+- **Safe areas.** `viewportFit: "cover"` was set with no `env(safe-area-inset-*)`
+  anywhere, so content ran under the home indicator. See `.safe-b` / `.pad-tabbar`.
+- **Grid is 3-up on phones** (`minmax(100px)` + `gap-x-3`); at `minmax(112px)`
+  + `gap-x-5` only two fitted.
+- **`--breakpoint-xs: 400px`** — Tailwind's smallest default stop is 640px.
+
+**Two CSS traps found here, both live in this codebase:**
+1. `.reg-mark`, `.hud-label` etc. are *unlayered* CSS that set `display`.
+   Unlayered rules beat `@layer utilities`, so a Tailwind `hidden` on those
+   elements does nothing. Wrap the element instead.
+2. `PixelMemoryCard` hardcodes `inline-block`; Tailwind emits `.inline-block`
+   *after* `.hidden`, so `hidden` loses there too. Same fix.
+   `.hud-label` being `inline-flex` is also why the Metacritic badge sat on top
+   of its own label — an inline sibling shares its line box.
+
+Verified with Chrome at 390x844. Note: Playwright's `devices["iPhone 13"]`
+emulates a retracting URL bar (layout viewport 714 vs visual 664) and pushes a
+`bottom: 0` fixed bar off-screen — that is an emulation artifact, not a bug.
+Shoot with `isMobile: false, hasTouch: true` instead.
+
 ### Wishlist
 Its own `wishlist` table, **not** a sixth value in `logs.status`. A wishlisted
 game has no rating, platform or play date, and the shelf, the diary and the

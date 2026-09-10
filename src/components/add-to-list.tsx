@@ -79,7 +79,7 @@ export function AddToList({
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-2 w-64 rounded-sm border border-neutral-800 bg-surface-2 p-1 shadow-2xl">
+        <div className="absolute left-0 z-50 mt-2 w-64 max-w-[calc(100vw-2.5rem)] rounded-sm border border-neutral-800 bg-surface-2 p-1 shadow-2xl">
           <div className="max-h-56 overflow-y-auto">
             {lists.length === 0 && (
               <p className="px-3 py-2 text-sm text-neutral-500">No lists yet.</p>

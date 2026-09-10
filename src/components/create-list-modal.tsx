@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { SheetOverlay, SheetGrip } from "./sheet";
 
 /** "+ New list" button that opens a modal to create a list, then navigates to it. */
 export function CreateListModal() {
@@ -42,15 +43,16 @@ export function CreateListModal() {
         + New list
       </button>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-[12vh]"
-          onClick={() => !busy && setOpen(false)}
-        >
+      <SheetOverlay
+        open={open}
+        onClose={() => !busy && setOpen(false)}
+        className="sm:pt-[12vh]"
+      >
           <div
-            className="w-full max-w-md space-y-4 rounded-2xl bg-surface-2 p-5 shadow-2xl ring-1 ring-neutral-800"
+            className="sheet w-full max-w-md space-y-4 overflow-y-auto rounded-t-2xl bg-surface-2 p-5 shadow-2xl ring-1 ring-neutral-800 sm:rounded-2xl"
             onClick={(e) => e.stopPropagation()}
           >
+            <SheetGrip />
             <h2 className="font-semibold">New list</h2>
             <input
               autoFocus
@@ -94,8 +96,7 @@ export function CreateListModal() {
               </button>
             </div>
           </div>
-        </div>
-      )}
+      </SheetOverlay>
     </>
   );
 }

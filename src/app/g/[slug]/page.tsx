@@ -103,6 +103,28 @@ export default async function GamePage({
   const favoritesFull = userFavorites.length >= 4;
   const wishlisted = user ? await isGameWishlisted(user.id, game.id) : false;
 
+  const titleBlock = (
+    <div>
+      <h1 className="font-display text-[22px] font-bold leading-tight tracking-tight text-neutral-50 sm:text-5xl">
+        {game.name}
+        {/* Visual easter egg: a pixel motif for games that have one.
+            Unlabelled by design — recognising it is the reward. */}
+        <GameSigil title={game.name} className="ml-3 -translate-y-1.5" />
+      </h1>
+      {game.releaseYear && (
+        <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-neutral-500 sm:text-[11px] sm:tracking-[0.18em]">
+          {game.releaseYear}
+          {game.developers[0] && (
+            <>
+              <span className="text-neutral-700"> · </span>
+              {game.developers[0].name}
+            </>
+          )}
+        </p>
+      )}
+    </div>
+  );
+
   return (
     <main className="relative flex-1">
       {/* The game's own art washes the top of its page — every game page is
@@ -114,53 +136,50 @@ export default async function GamePage({
         <div className="ambient" style={{ backgroundImage: `url(${game.coverUrl})` }} />
       )}
 
-      <div className="mx-auto w-full max-w-5xl px-5 pb-16 pt-14">
-        <div className="flex flex-col gap-8 sm:flex-row">
-          {/* Cover, treated as the hero object: bigger, squarer, rim-lit. */}
-          <div className="shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={game.coverUrl ?? ""}
-              alt={game.name}
-              className="cover cover-featured aspect-[3/4] w-52 rounded-[4px] bg-surface-2 object-cover sm:w-56"
-            />
+      <div className="mx-auto w-full max-w-5xl px-5 pb-16 pt-7 sm:pt-14">
+        {/*
+          Two different shapes, not one reflowed.
+
+          Desktop is a cover column beside everything else. On a phone that
+          leaves the right-hand column about 210px wide, which is too narrow for
+          three rating blocks (they collided and ran off-screen) and for the
+          action row (it stacked one button per line). So the phone layout puts
+          the cover beside the *title only*, then gives ratings and actions the
+          full width underneath. `titleBlock` is rendered into whichever slot is
+          live at the current breakpoint — one of the two is always display:none,
+          so only one reaches the accessibility tree.
+        */}
+        <div className="flex flex-col gap-6 sm:flex-row sm:gap-8">
+          <div className="flex items-start gap-4 sm:block">
+            {/* Cover, treated as the hero object: bigger, squarer, rim-lit. */}
+            <div className="shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={game.coverUrl ?? ""}
+                alt={game.name}
+                className="cover cover-featured aspect-[3/4] w-[118px] rounded-[4px] bg-surface-2 object-cover xs:w-[136px] sm:w-56"
+              />
+            </div>
+            <div className="min-w-0 flex-1 sm:hidden">{titleBlock}</div>
           </div>
 
-          {/* Title + actions */}
-          <div className="flex-1 space-y-5">
-            <div>
-              <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-neutral-50 sm:text-5xl">
-                {game.name}
-                {/* Visual easter egg: a pixel motif for games that have one.
-                    Unlabelled by design — recognising it is the reward. */}
-                <GameSigil title={game.name} className="ml-3 -translate-y-1.5" />
-              </h1>
-              {game.releaseYear && (
-                <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.18em] text-neutral-500">
-                  {game.releaseYear}
-                  {game.developers[0] && (
-                    <>
-                      <span className="text-neutral-700"> · </span>
-                      {game.developers[0].name}
-                    </>
-                  )}
-                </p>
-              )}
-            </div>
+          {/* Ratings + actions */}
+          <div className="min-w-0 flex-1 space-y-5">
+            <div className="hidden sm:block">{titleBlock}</div>
 
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+          <div className="grid grid-cols-3 items-start gap-x-3 gap-y-4 sm:flex sm:flex-wrap sm:gap-x-8">
             <div>
               <p className="hud-label">Community</p>
               <div className="mt-1.5">
               {aggregate.average != null ? (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
                   <StarRating value={aggregate.average} readOnly />
                   <span className="text-sm text-neutral-500">
                     {aggregate.average.toFixed(1)} ({aggregate.ratingCount})
                   </span>
                 </div>
               ) : (
-                <p className="text-sm text-neutral-500">Not yet rated</p>
+                <p className="text-[13px] text-neutral-500 sm:text-sm">Not yet rated</p>
               )}
               </div>
             </div>
@@ -177,7 +196,10 @@ export default async function GamePage({
               <div>
                 <p className="hud-label">Metacritic</p>
                 <span
-                  className={`mt-1.5 inline-block rounded-sm px-2 py-0.5 font-mono text-lg font-bold leading-tight text-black ${
+                  /* block, not inline-block: .hud-label is display:inline-flex,
+                     so an inline sibling shares its line — the score sat on top
+                     of the word METACRITIC at every width. */
+                  className={`mt-1.5 block w-fit rounded-sm px-2 py-0.5 font-mono text-lg font-bold leading-tight text-black ${
                     game.metacritic >= 75
                       ? "bg-status-playing"
                       : game.metacritic >= 50

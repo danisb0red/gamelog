@@ -61,7 +61,9 @@ export default function RootLayout({
     >
       <body className="grain flex min-h-full flex-col overflow-x-hidden bg-surface-0">
         <AppHeader />
-        <div className="relative z-[2] flex flex-1 flex-col">{children}</div>
+        {/* pad-tabbar reserves the height of the mobile tab bar (and the home
+            indicator beneath it) so the end of a page is never trapped under it. */}
+        <div className="pad-tabbar relative z-[2] flex flex-1 flex-col">{children}</div>
         <HiddenMark />
         <Konami />
       </body>

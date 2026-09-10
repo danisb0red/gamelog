@@ -47,7 +47,7 @@ export function GamesGrid({
   }
 
   return (
-    <ul className="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-x-5 gap-y-7 sm:grid-cols-[repeat(auto-fill,minmax(132px,1fr))]">
+    <ul className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-x-3 gap-y-6 sm:grid-cols-[repeat(auto-fill,minmax(132px,1fr))] sm:gap-x-5 sm:gap-y-7">
       {games.map((g, i) => (
         <li key={g.gameId} className="min-w-0">
           <GameCover

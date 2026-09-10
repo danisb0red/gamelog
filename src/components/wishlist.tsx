@@ -46,7 +46,7 @@ export function Wishlist({
   if (games.length === 0 && !isOwner) return null;
 
   return (
-    <section className="mb-12">
+    <section className="mb-10 sm:mb-12">
       <div className="mb-5 flex items-end justify-between">
         <h2 className="font-display text-2xl font-semibold tracking-tight text-neutral-100">
           Wishlist
@@ -70,7 +70,7 @@ export function Wishlist({
           Add games from any game page.
         </p>
       ) : (
-        <ul className="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-x-5 gap-y-7 sm:grid-cols-[repeat(auto-fill,minmax(132px,1fr))]">
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-x-3 gap-y-6 sm:grid-cols-[repeat(auto-fill,minmax(132px,1fr))] sm:gap-x-5 sm:gap-y-7">
           {games.map((g) => (
             <li key={g.gameId} className="relative min-w-0">
               <GameCover game={g} size="full" />

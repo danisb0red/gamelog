@@ -52,6 +52,11 @@
 }
 
 @theme inline {
+  /* Small phones (iPhone SE, 375px) and large ones (430px) are far enough apart
+     to matter on a cover-art layout, and Tailwind's smallest default stop is
+     640px — everything below it gets one set of rules without this. */
+  --breakpoint-xs: 400px;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
@@ -383,13 +388,23 @@ body {
    instead of plain <h2>s so the page reads like an interface. */
 .hud-label {
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.18em;
+  /* 0.18em of tracking on an 11px label is ~90px for a word like METACRITIC.
+     Three of those never fit across a phone, so the tick and the tracking both
+     come in a step below `sm`; the register survives, the overflow doesn't. */
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #a89a8b;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
+}
+
+@media (min-width: 640px) {
+  .hud-label {
+    font-size: 0.6875rem;
+    letter-spacing: 0.18em;
+  }
 }
 
 .hud-label::before {
@@ -777,4 +792,120 @@ body {
 
 .save-pop {
   animation: save-pop 340ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+/* ============================================================================
+   PHONES
+   ----------------------------------------------------------------------------
+   The site was laid out for a desktop and left to reflow, which on a phone read
+   as a tall web page rather than something you hold. Everything below is about
+   the difference: navigation within thumb reach, nothing hidden under the home
+   indicator, and taps that respond like an app rather than a document.
+   ========================================================================== */
+
+/* The layout declares viewportFit: "cover", which paints into the notch and the
+   home-indicator strip. Without these the bottom bar sits *under* the indicator
+   and the last row of a list is unreachable. */
+.safe-b { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-t { padding-top: env(safe-area-inset-top, 0px); }
+
+/* Room for the tab bar, so the last thing on a page is never trapped behind it.
+   56px is the bar, plus whatever the device reserves below it. */
+.pad-tabbar { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 768px) {
+  .pad-tabbar { padding-bottom: 0; }
+}
+
+/*
+ * The tab bar.
+ *
+ * Frosted rather than solid so cover art stays faintly visible as it passes
+ * underneath — the bar reads as a layer above the page instead of a wall
+ * cutting it off.
+ */
+.tab-bar {
+  background: color-mix(in srgb, var(--surface-0) 88%, transparent);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+/*
+ * Touch behaviour.
+ *
+ * The grey flash Safari paints on every tap is the single loudest "this is a
+ * web page" tell. `touch-action: manipulation` drops the 300ms double-tap-zoom
+ * wait, so buttons fire immediately.
+ */
+@media (hover: none) {
+  a, button, [role="button"], input, select, textarea, label {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Hover styling never applies on a touch screen, but :active does — so the
+     feedback for a press has to be an actual press. */
+  a:active, button:active { opacity: 0.62; }
+
+  /* The cover lift is a pointer affordance; on touch it only ever fires *after*
+     the tap, which looks like a bug. */
+  .cover:hover { transform: none; }
+}
+
+/* Anchored jumps and focus scrolls have to clear the sticky header. */
+:target,
+[id] { scroll-margin-top: 76px; }
+
+/*
+ * Sheets.
+ *
+ * A centred dialog is a desktop convention: on a phone it lands mid-screen,
+ * away from the thumbs, with the keyboard covering half of it. These slide up
+ * from the bottom edge, are full-width, and cap their own height so a long form
+ * scrolls inside the sheet rather than moving the page behind it.
+ */
+.sheet {
+  animation: sheet-up 260ms cubic-bezier(0.2, 0.8, 0.25, 1) both;
+  max-height: min(88dvh, 760px);
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+}
+
+@keyframes sheet-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Above `sm` the sheet becomes an ordinary centred dialog again. */
+@media (min-width: 640px) {
+  .sheet {
+    max-height: min(84vh, 820px);
+    padding-bottom: 1.25rem;
+    animation-name: sheet-in;
+  }
+  @keyframes sheet-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+}
+
+/* Below `sm` a sheet meets the bottom edge, so its corners round at the top and
+   the notched clip the desktop dialog uses is dropped — a diagonal cut on an
+   edge that is flush with the screen just looks like a rendering fault. */
+@media (max-width: 639.98px) {
+  .sheet {
+    clip-path: none;
+    border-radius: 1rem 1rem 0 0;
+  }
+}
+
+/* The grab handle at the top of a sheet — the one affordance that says
+   "this came from the bottom edge and goes back there". */
+.sheet-grip {
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surface-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet { animation: none; }
 }
