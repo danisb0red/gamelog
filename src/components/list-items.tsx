@@ -53,7 +53,7 @@ export function ListItems({
             time-based seed can land in a different bucket on the server render
             than on hydration. Per-list is stable and still varies list to list. */}
         {getMessage("empty.listItems", hashSeed(listId))}{" "}
-        {isOwner && "Open a game's page and use “Add to list” to put it here."}
+        {isOwner && "Use “Add games” above to fill it."}
       </p>
     );
   }

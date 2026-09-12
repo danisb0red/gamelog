@@ -206,6 +206,16 @@ asked for a name stored the **whole email address**, so the upsert heals those
 on next sign-in — matching only null-or-contains-`@`, so a real chosen name is
 never overwritten.
 
+### Adding games to a list
+`AddGamesToList` (`src/components/add-games-to-list.tsx`) — owner-only button on
+the list page that opens a search sheet. It **stays open after each add**, which
+is the whole point: building a list used to mean leaving it (open a game page →
+Add to list → pick list → back → repeat). Games already on the list arrive as
+`existingIds` and render as "✓ On list" from the first frame, so a duplicate is
+never offered — the API no-ops on one, which would otherwise look like a dead
+button. No API change was needed; `POST /api/lists/:id/items` already checked
+ownership, cached the game and appended.
+
 ### "You" is a nav destination, not a dropdown item
 Lists, Wishlist and Favorites render **only** on the profile, and the avatar
 dropdown was the only link to your own profile anywhere in the app (the other

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getList } from "@/lib/db/queries";
 import { getUser } from "@/lib/auth";
 import { ListItems } from "@/components/list-items";
+import { AddGamesToList } from "@/components/add-games-to-list";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,15 @@ export default async function ListPage({
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-neutral-300">
             {list.description}
           </p>
+        )}
+
+        {isOwner && (
+          <div className="mt-5">
+            <AddGamesToList
+              listId={list.id}
+              existingIds={list.items.map((i) => i.gameId)}
+            />
+          </div>
         )}
       </header>
 
