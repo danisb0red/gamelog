@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
-/** Account dropdown in the header. */
+/**
+ * Account dropdown in the header.
+ *
+ * Deliberately short: your profile, and the way out. Every other destination
+ * already has permanent navigation at every breakpoint.
+ */
 export function ProfileMenu({
   username,
   displayName,
@@ -52,27 +57,10 @@ export function ProfileMenu({
           >
             Profile
           </Link>
-          <Link
-            href={`/u/${username}/shelf`}
-            onClick={() => setOpen(false)}
-            className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-2"
-          >
-            Shelf
-          </Link>
-          <Link
-            href={`/u/${username}/diary`}
-            onClick={() => setOpen(false)}
-            className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-2"
-          >
-            Diary
-          </Link>
-          <Link
-            href="/"
-            onClick={() => setOpen(false)}
-            className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-2"
-          >
-            Home
-          </Link>
+          {/* Only what isn't already one tap away. Home, Shelf and Diary are in
+              the header nav above `md` and in the tab bar below it, so listing
+              them here again made a five-item menu where three items were
+              duplicates and the two that mattered were buried among them. */}
           <form action="/auth/signout" method="post">
             <button
               type="submit"
