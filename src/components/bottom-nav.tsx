@@ -60,7 +60,8 @@ function IconDiary() {
   );
 }
 
-function IconSignIn() {
+/** Also the signed-out "Sign in" mark: the two are never on screen together. */
+function IconYou() {
   return (
     <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true" {...stroke}>
       <circle cx="12" cy="8.5" r="3.5" />
@@ -99,12 +100,23 @@ export function BottomNav({ username }: { username: string | null }) {
             icon: <IconDiary />,
             match: (p: string) => p === `/u/${username}/diary`,
           },
+          // Lists, Wishlist and Favorites live on the profile and nowhere else,
+          // and until this tab existed the only route to any of them was an
+          // unlabelled avatar in the far corner, then a dropdown. Five tabs puts
+          // each at 78px on a 390px screen — comfortably past the 44pt minimum.
+          {
+            href: `/u/${username}`,
+            label: "You",
+            icon: <IconYou />,
+            // Exact: /shelf and /diary sit underneath and own their own tabs.
+            match: (p: string) => p === `/u/${username}`,
+          },
         ]
       : [
           {
             href: "/login",
             label: "Sign in",
-            icon: <IconSignIn />,
+            icon: <IconYou />,
             match: (p: string) => p.startsWith("/login"),
           },
         ]),

@@ -206,6 +206,17 @@ asked for a name stored the **whole email address**, so the upsert heals those
 on next sign-in — matching only null-or-contains-`@`, so a real chosen name is
 never overwritten.
 
+### "You" is a nav destination, not a dropdown item
+Lists, Wishlist and Favorites render **only** on the profile, and the avatar
+dropdown was the only link to your own profile anywhere in the app (the other
+two `/u/<name>` links point at *other* people — a list owner, a reviewer). So
+three features sat behind an unlabelled circle plus a menu. The profile now has
+a permanent slot: a fifth tab on mobile (78px each, past the 44pt minimum) and
+a header nav item on desktop, both labelled **You**.
+The avatar menu keeps only what navigation doesn't already show — identity and
+Sign out. Rule of thumb for that menu: if it has a permanent home elsewhere at
+every breakpoint, it does not belong in there.
+
 ### Shelf is its own page
 `/u/[username]/shelf` is the collection; `/u/[username]` is identity plus a
 "Recently logged" strip. The Shelf tab and the desktop nav point at the shelf;

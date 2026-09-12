@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 
 /**
  * Account dropdown in the header.
@@ -50,17 +49,9 @@ export function ProfileMenu({
             <p className="truncate text-xs text-neutral-500">@{username}</p>
           </div>
           <div className="my-1 h-px bg-surface-2" />
-          <Link
-            href={`/u/${username}`}
-            onClick={() => setOpen(false)}
-            className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-2"
-          >
-            Profile
-          </Link>
-          {/* Only what isn't already one tap away. Home, Shelf and Diary are in
-              the header nav above `md` and in the tab bar below it, so listing
-              them here again made a five-item menu where three items were
-              duplicates and the two that mattered were buried among them. */}
+          {/* Only what isn't already one tap away. Home, Shelf, Diary and You
+              all have permanent navigation at every breakpoint, so repeating
+              them here would just bury the one thing that doesn't. */}
           <form action="/auth/signout" method="post">
             <button
               type="submit"

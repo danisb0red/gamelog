@@ -32,6 +32,7 @@ export async function AppHeader() {
         { href: "/", label: "Home" },
         { href: `/u/${profile.username}/shelf`, label: "Shelf" },
         { href: `/u/${profile.username}/diary`, label: "Diary" },
+        { href: `/u/${profile.username}`, label: "You" },
       ]
     : [];
 
