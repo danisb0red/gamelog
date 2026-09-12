@@ -909,3 +909,39 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .sheet { animation: none; }
 }
+
+/*
+ * Tab press feedback.
+ *
+ * A sweep along the top edge of the pressed tab, shown only while the
+ * navigation is actually pending. Indeterminate on purpose — we have no idea
+ * how long the destination will take, and a fake progress bar that stalls at
+ * 80% is worse than an honest one that just moves.
+ */
+.tab-pending {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 2px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-accent, #e5715b) 22%, transparent);
+}
+
+.tab-pending::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  width: 45%;
+  background: var(--color-accent, #e5715b);
+  animation: tab-sweep 850ms cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@keyframes tab-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(320%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Still acknowledge the press — just hold the bar instead of moving it. */
+  .tab-pending::after { animation: none; width: 100%; opacity: 0.7; }
+}

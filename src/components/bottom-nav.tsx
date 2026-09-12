@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { TabPending } from "./nav-pending";
 
 type Tab = { href: string; label: string; icon: React.ReactNode; match: (p: string) => boolean };
 
@@ -87,10 +88,10 @@ export function BottomNav({ username }: { username: string | null }) {
     ...(username
       ? [
           {
-            href: `/u/${username}`,
+            href: `/u/${username}/shelf`,
             label: "Shelf",
             icon: <IconShelf />,
-            match: (p: string) => p === `/u/${username}`,
+            match: (p: string) => p === `/u/${username}/shelf`,
           },
           {
             href: `/u/${username}/diary`,
@@ -136,6 +137,9 @@ export function BottomNav({ username }: { username: string | null }) {
                     active ? "opacity-100" : "opacity-0"
                   }`}
                 />
+                {/* Must be inside the Link — useLinkStatus reports the status
+                    of the Link it is rendered within. */}
+                <TabPending />
                 {t.icon}
                 <span className="font-mono text-[9px] uppercase tracking-[0.14em]">
                   {t.label}

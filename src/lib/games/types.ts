@@ -28,6 +28,9 @@ export type GameDetail = GameSummary & {
   externalRating: number | null; // provider's own rating, 0–5
   metacritic: number | null; // 0–100
   screenshots: string[];
+  /** Games to send the reader to next. Empty when the provider has none — the
+   *  game page then renders no related shelf at all. */
+  similar: GameSummary[];
 };
 
 export type DeveloperPage = {

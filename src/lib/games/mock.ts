@@ -59,6 +59,9 @@ export const mockProvider: GameProvider = {
       externalRating: 4.2,
       metacritic: 88,
       screenshots: [],
+      similar: GAMES.filter((x) => x.id !== g.id)
+        .slice(0, 6)
+        .map((x) => ({ ...x, coverUrl: coverFor(x.name) })),
     };
   },
 

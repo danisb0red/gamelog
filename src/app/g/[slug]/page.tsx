@@ -21,6 +21,7 @@ import { AddToList } from "@/components/add-to-list";
 import { FavoriteButton } from "@/components/favorite-button";
 import { WishlistButton } from "@/components/wishlist-button";
 import { Screenshots } from "@/components/screenshots";
+import { RelatedGames } from "@/components/related-games";
 import type { NamedRef } from "@/lib/games/types";
 
 export const dynamic = "force-dynamic";
@@ -326,6 +327,10 @@ export default async function GamePage({
           </ul>
         )}
         </section>
+
+        {/* Last thing on the page: once you're done reading about this game,
+            the way out is another game. */}
+        <RelatedGames games={game.similar} />
       </div>
     </main>
   );

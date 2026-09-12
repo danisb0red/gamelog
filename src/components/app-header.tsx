@@ -30,7 +30,7 @@ export async function AppHeader() {
   const nav = profile
     ? [
         { href: "/", label: "Home" },
-        { href: `/u/${profile.username}`, label: "Shelf" },
+        { href: `/u/${profile.username}/shelf`, label: "Shelf" },
         { href: `/u/${profile.username}/diary`, label: "Diary" },
       ]
     : [];

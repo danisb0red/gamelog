@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ShelfBrowser } from "@/components/shelf-browser";
 import { ListCards } from "@/components/list-cards";
 import { CreateListModal } from "@/components/create-list-modal";
 import { Favorites } from "@/components/favorites";
 import { Wishlist } from "@/components/wishlist";
+import { Shelf, EmptyShelf } from "@/components/shelf";
+import { GameCover } from "@/components/game-cover";
 import {
   getProfileByUsername,
   getUserGames,
@@ -13,20 +14,19 @@ import {
   getUserWishlist,
 } from "@/lib/db/queries";
 import { getUser } from "@/lib/auth";
-import { isStatus } from "@/lib/status";
+import { getMessage } from "@/lib/personality";
 import { PixelMemoryCard } from "@/components/pixel";
 
 export const dynamic = "force-dynamic";
 
+// No searchParams: the shelf filters moved to /u/[username]/shelf, and the old
+// links that carried them are redirected in src/proxy.ts before this renders.
 export default async function ProfilePage({
   params,
-  searchParams,
 }: {
   params: Promise<{ username: string }>;
-  searchParams: Promise<{ status?: string; platform?: string }>;
 }) {
   const { username } = await params;
-  const { status, platform } = await searchParams;
   const profile = await getProfileByUsername(username);
   if (!profile) notFound();
 
@@ -39,15 +39,6 @@ export default async function ProfilePage({
   ]);
   const isOwner = viewer?.id === profile.id;
 
-  // Distinct platforms this user has played on.
-  const platformOptions = [...new Set(all.map((g) => g.platform).filter(Boolean))].sort() as string[];
-  const activePlatform = platform && platformOptions.includes(platform) ? platform : "";
-
-  // Only the *initial* tab comes from the URL; ShelfBrowser owns it after that.
-  const active = isStatus(status) ? status : "all";
-
-  // Header stat, deliberately over the whole collection: the save-file panel
-  // describes the account, not whatever the shelf below is currently filtered to.
   const finishedCount = all.filter((g) => g.status === "finished").length;
 
   const rated = all.filter((g) => g.rating != null);
@@ -206,15 +197,30 @@ export default async function ProfilePage({
 
         <Wishlist games={userWishlist} isOwner={isOwner} />
 
-        {/* Filtering happens on the client — see ShelfBrowser. The whole
-            collection is already loaded for the counts, so switching tabs
-            needs no navigation, no skeleton flash and no scroll reset. */}
-        <ShelfBrowser
-          games={all}
-          platforms={platformOptions}
-          initialStatus={active}
-          initialPlatform={activePlatform}
-        />
+        {/* The collection itself lives at /u/[username]/shelf now. This is the
+            last few covers as a sign of life, not a browsable copy of it —
+            already-fetched rows, so it costs no extra query. */}
+        <Shelf
+          title="Recently logged"
+          action={
+            all.length > 0
+              ? { href: `/u/${profile.username}/shelf`, text: "Full shelf" }
+              : undefined
+          }
+        >
+          {all.length > 0 ? (
+            all
+              .slice(0, 12)
+              .map((g, i) => (
+                <GameCover key={g.gameId} game={g} size="sm" priorityIndex={i} />
+              ))
+          ) : (
+            <EmptyShelf
+              message={getMessage("empty.library")}
+              hint="Search a game to add it to your shelf."
+            />
+          )}
+        </Shelf>
       </div>
     </main>
   );

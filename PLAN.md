@@ -206,6 +206,44 @@ asked for a name stored the **whole email address**, so the upsert heals those
 on next sign-in — matching only null-or-contains-`@`, so a real chosen name is
 never overwritten.
 
+### Shelf is its own page
+`/u/[username]/shelf` is the collection; `/u/[username]` is identity plus a
+"Recently logged" strip. The Shelf tab and the desktop nav point at the shelf;
+the profile is reached from the avatar menu. Still four tabs.
+Old `/u/x?status=…` links are 307'd in **`src/proxy.ts`**, not in the page —
+the profile now streams a `loading` shell, and once that has flushed Next can
+no longer send an HTTP redirect, degrading to a `<meta refresh>` with a 200.
+Edge redirect happens before anything renders.
+
+### Related games
+"More like this" on every game page, from IGDB's curated `similar_games`,
+expanded **inside the existing detail query** to stay under the 4 req/s cap.
+Falls back to same-genre + ±4 years when a game has no curated list, re-ranked
+by genre overlap (Adventure and Indie are dropped from the *filter* when a
+narrower genre exists — matching on them just returns whatever is popular).
+The detail query **retries once without the expansion** if it 400s: an unknown
+field in `fields` is a hard error, and IGDB has renamed a field under us before
+(`category` → `game_type`), so the related shelf must not be able to take the
+whole game page down.
+
+### `/` was 8.4s cold — IGDB cache now shared
+The `igdb_cache` table was declared in `schema.ts` but **had never been created**
+(`relation "igdb_cache" does not exist`). `scripts/add-igdb-cache.ts` creates it;
+RLS is enabled with **zero policies** on purpose — it is server infrastructure,
+the app reaches it as `postgres` (which bypasses RLS) and nobody else should.
+The provider is now two-tier: L1 in-process Map, L2 the shared table, write-
+through and awaited. Keys are `endpoint:sha256(body)` because a Postgres btree
+entry caps near 2.7kB and an expanded Apicalypse body is not far off.
+Measured on a fresh instance with L1 empty: **9.6s → 1.26s**, 18ms warm.
+
+### Tapping HOME felt dead
+Not an input bug — the tap target measured 98x56px. `/` is `force-dynamic` and
+had **no `loading.tsx`**, so Next had nothing to show during navigation and the
+old page just sat there: 3.7s of no feedback, so you tap again. `src/app/loading.tsx`
+gives the route a prefetchable shell — measured **131ms to first paint** with `/`
+artificially delayed 3s. `nav-pending.tsx` (`useLinkStatus`) adds a sweep on the
+pressed tab for when a prefetch has not finished.
+
 ### Phones
 The site was laid out for a desktop and left to reflow, which read as a tall web
 page rather than something you hold. What changed, and why it has to stay:

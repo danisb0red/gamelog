@@ -76,16 +76,14 @@ export function ShelfBrowser({
 
   return (
     <section>
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-        <h2 className="font-display text-2xl font-semibold tracking-tight text-neutral-100">
-          Shelf
-          <span className="ml-2.5 font-mono text-sm font-normal text-neutral-500">
-            {String(visible.length).padStart(2, "0")}
-          </span>
-        </h2>
-
-        {platforms.length > 0 && (
-          <label className="flex items-center gap-2 text-sm text-neutral-500">
+      {/* No heading of its own: this now sits on a page titled "Shelf", and a
+          second Shelf a line below the first just reads as a bug. */}
+      {/* Platform filter sits left on a phone — right-aligned it stranded the
+          label mid-row with a gap beside it — and right from `sm`, where there
+          is a grid edge to align to. */}
+      {platforms.length > 0 && (
+        <div className="mb-5 flex justify-start sm:justify-end">
+          <label className="flex w-full items-center gap-2 text-sm text-neutral-500 sm:w-auto">
             Platform
             <select
               value={platform}
@@ -93,7 +91,7 @@ export function ShelfBrowser({
                 setPlatform(e.target.value);
                 syncUrl(status, e.target.value);
               }}
-              className="rounded-lg border border-neutral-800 bg-surface-1 px-2 py-1.5 text-sm text-neutral-200 outline-none focus:border-accent [color-scheme:dark]"
+              className="min-w-0 flex-1 rounded-lg border border-neutral-800 bg-surface-1 px-2 py-1.5 text-sm text-neutral-200 outline-none focus:border-accent [color-scheme:dark] sm:flex-none"
             >
               <option value="">All platforms</option>
               {platforms.map((p) => (
@@ -103,8 +101,8 @@ export function ShelfBrowser({
               ))}
             </select>
           </label>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="mb-7 flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-neutral-800/70">
         {tabs.map((t) => {

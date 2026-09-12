@@ -172,6 +172,9 @@ export const rawgProvider: GameProvider = {
       externalRating: typeof g.rating === "number" ? g.rating : null,
       metacritic: typeof g.metacritic === "number" ? g.metacritic : null,
       screenshots,
+      // RAWG's suggested-games endpoint isn't on the free tier we use, so this
+      // provider has no related games to offer and the shelf stays hidden.
+      similar: [],
     };
   },
 

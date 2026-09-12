@@ -53,6 +53,13 @@ export function ProfileMenu({
             Profile
           </Link>
           <Link
+            href={`/u/${username}/shelf`}
+            onClick={() => setOpen(false)}
+            className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-2"
+          >
+            Shelf
+          </Link>
+          <Link
             href={`/u/${username}/diary`}
             onClick={() => setOpen(false)}
             className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-2"

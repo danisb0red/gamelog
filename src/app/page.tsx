@@ -111,7 +111,7 @@ export default async function Home() {
         <Shelf
           title="Currently playing"
           count={playing.length || undefined}
-          action={profile ? { href: `/u/${profile.username}`, text: "Full shelf" } : undefined}
+          action={profile ? { href: `/u/${profile.username}/shelf`, text: "Full shelf" } : undefined}
         >
           {playing.length > 0 ? (
             playing.map((g, i) => (
