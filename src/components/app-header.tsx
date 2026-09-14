@@ -27,14 +27,17 @@ export async function AppHeader() {
     profile = await getProfileById(user.id);
   }
 
-  const nav = profile
-    ? [
-        { href: "/", label: "Home" },
-        { href: `/u/${profile.username}/shelf`, label: "Shelf" },
-        { href: `/u/${profile.username}/diary`, label: "Diary" },
-        { href: `/u/${profile.username}`, label: "You" },
-      ]
-    : [];
+  const nav = [
+    { href: "/", label: "Home" },
+    { href: "/releases", label: "Releases" },
+    ...(profile
+      ? [
+          { href: `/u/${profile.username}/shelf`, label: "Shelf" },
+          { href: `/u/${profile.username}/diary`, label: "Diary" },
+          { href: `/u/${profile.username}`, label: "You" },
+        ]
+      : []),
+  ];
 
   return (
     <>

@@ -206,6 +206,47 @@ asked for a name stored the **whole email address**, so the upsert heals those
 on next sign-in — matching only null-or-contains-`@`, so a real chosen name is
 never overwritten.
 
+### Release calendar (`/releases`)
+Month agenda of upcoming games, a spotlight for the week's biggest launch, a day
+strip that follows your scroll (mini month on desktop), filters, and a wishlist
+toggle on every row. Also feeds "Out this week" on Home and the empty Search
+screen, and a "Coming up from your games" callout in Home's hero.
+
+**Data rules — each one is a trap that was verified against live IGDB:**
+- `release_dates` with **`date_format = 0` only**. Vaguer dates still carry a
+  timestamp — "Q3 2026" is stamped **Sep 30** — so without this every
+  quarter-dated game lands on the last day of the quarter.
+- Release days are **00:00 UTC**. They are `YYYY-MM-DD` strings end to end and
+  formatted with `timeZone: "UTC"`; turning one into a local Date moves it a day
+  earlier for the Americas. "Today/Tomorrow" is computed client-side
+  (`useSyncExternalStore`), since only the browser knows the viewer's date.
+  Checked in Asia/Karachi and America/Los_Angeles: Wolverine is the 15th in both.
+- One game → several days: IGDB `status` 34 = Advanced Access (Control Resonant
+  is on PS5 the 22nd, launches the 24th), 3 = Early Access; 4/5/35/36 excluded.
+- Rows more than 60 days after the game's own first release are **re-releases**
+  ("New platforms") — Fallout 76 on PS5 isn't a launch. The spotlight only ever
+  picks true launches.
+- Query is `game.hypes > 0` (a month drops from 1,673 rows to ~576, 2 pages),
+  plus a second query by id for the viewer's own games so a low-hype game on
+  your wishlist still appears. Pages of 500, up to 6.
+
+**Speed:** a cold month is ~6.8s (several pages behind the 4 req/s limit), 2ms
+from `igdb_cache`. So the month header renders outside a Suspense boundary and
+the calendar streams in behind a matching skeleton; Home's two consumers share
+one load via React `cache()`. Release queries put a date in the cache key, so
+`cacheSet` sweeps expired `igdb_cache` rows ~2% of the time to keep the table
+bounded. TTL is 3h (delays land often).
+
+**Default view is Highlights** (hype ≥ 10 or one of your games). "All" is
+~280 a month and mostly unknown PC releases; a month with no highlights opens on
+All instead of an empty filter.
+
+**CSS trap found here:** the build keeps only `-webkit-backdrop-filter` from
+`globals.css` and drops the standard property, so the "frosted" tab bar was never
+blurred in Chrome or on Android. Blur now comes from Tailwind's
+`backdrop-blur-xl` utility on the element, which survives. Don't put
+backdrop-filter in `globals.css`.
+
 ### Adding games to a list
 `AddGamesToList` (`src/components/add-games-to-list.tsx`) — owner-only button on
 the list page that opens a search sheet. It **stays open after each add**, which

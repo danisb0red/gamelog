@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { OutThisWeek, OutThisWeekSkeleton, YourUpcoming } from "@/components/releases/out-this-week";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { PopularList } from "@/components/popular-list";
 import { GameCover } from "@/components/game-cover";
@@ -9,6 +11,7 @@ import {
   getCurrentlyPlaying,
   getUserGames,
   getProfileById,
+  getUserWishlist,
 } from "@/lib/db/queries";
 import { getUser, ensureProfile } from "@/lib/auth";
 import { getTrendingOrPopular } from "@/lib/games/trending";
@@ -54,8 +57,14 @@ export default async function Home() {
             </span>
           </div>
 
+          <div className="mt-16">
+            <Suspense fallback={<OutThisWeekSkeleton />}>
+              <OutThisWeek />
+            </Suspense>
+          </div>
+
           {popular.length > 0 && (
-            <div className="mt-20">
+            <div className="mt-8">
               <Shelf title="What people are playing">
                 {popular.map((g, i) => (
                   <GameCover key={g.id} game={g} size="md" priorityIndex={i} />
@@ -70,13 +79,15 @@ export default async function Home() {
 
   // ── Signed in ────────────────────────────────────────────────────────────
   await ensureProfile(user);
-  const [playing, entries, popular, allGames, profile] = await Promise.all([
+  const [playing, entries, popular, allGames, profile, wishlist] = await Promise.all([
     getCurrentlyPlaying(user.id),
     getRecentLogs(user.id, 12),
     getTrendingOrPopular(10),
     getUserGames(user.id),
     getProfileById(user.id),
+    getUserWishlist(user.id),
   ]);
+  const myGameIds = [...new Set([...allGames.map((g) => g.gameId), ...wishlist.map((g) => g.gameId)])];
 
   // The hero's ambient wash comes from whatever you're playing right now, so the
   // page is literally coloured by your current game. Falls back to trending.
@@ -101,6 +112,9 @@ export default async function Home() {
             <PixelController size={15} className="text-neutral-600" />
             {allGames.length} games on the shelf
           </p>
+          <Suspense fallback={null}>
+            <YourUpcoming gameIds={myGameIds} />
+          </Suspense>
         </header>
 
         <div className="rule-pixel" aria-hidden="true">
@@ -130,6 +144,11 @@ export default async function Home() {
             />
           )}
         </Shelf>
+
+        {/* ── What's coming: the part of Home that changes without you ──── */}
+        <Suspense fallback={<OutThisWeekSkeleton />}>
+          <OutThisWeek gameIds={myGameIds} />
+        </Suspense>
 
         {/* ── Collection: typographic, lets the page breathe ────────────── */}
         <StatStrip games={allGames} />

@@ -1,4 +1,4 @@
-import type { DeveloperPage, GameDetail, GameProvider, GameSummary } from "./types";
+import type { DeveloperPage, GameDetail, GameProvider, GameSummary, ReleaseEntry } from "./types";
 
 /**
  * Mock provider — lets us build and demo the whole app with zero credentials.
@@ -74,5 +74,22 @@ export const mockProvider: GameProvider = {
 
   async getPopularGames(limit = 12): Promise<GameSummary[]> {
     return GAMES.slice(0, limit).map((g) => ({ ...g, coverUrl: coverFor(g.name) }));
+  },
+
+  /** A few fixtures spread across the requested window, so the calendar can be
+   *  built and demoed with no credentials. */
+  async getReleases(from, to): Promise<ReleaseEntry[]> {
+    const start = Date.parse(`${from}T00:00:00Z`);
+    const span = Math.max(1, (Date.parse(`${to}T00:00:00Z`) - start) / 86400000);
+    const plats = [["PS5"], ["PC", "Series X|S"], ["Switch 2"], ["PC", "PS5", "Series X|S"]];
+    return GAMES.slice(0, 8).map((g, i) => ({
+      game: { ...g, coverUrl: coverFor(g.name) },
+      date: new Date(start + Math.floor((i * span) / 8) * 86400000).toISOString().slice(0, 10),
+      platforms: plats[i % plats.length],
+      kind: i === 5 ? "early-access" : "launch",
+      hype: 100 - i * 10,
+      region: null,
+      edition: null,
+    }));
   },
 };

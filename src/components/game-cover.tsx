@@ -39,6 +39,7 @@ export function GameCover({
   priorityIndex,
   platform,
   catalogNumber,
+  caption,
 }: {
   game: CoverGame;
   size?: keyof typeof SIZES;
@@ -50,6 +51,8 @@ export function GameCover({
   platform?: string | null;
   /** Position in the collection, printed as a catalog number. */
   catalogNumber?: number;
+  /** Replaces the year/platform line — e.g. a release day on the calendar strip. */
+  caption?: React.ReactNode;
 }) {
   const name = game.gameName ?? game.name ?? "";
   const slug = game.gameSlug ?? game.slug ?? "";
@@ -122,7 +125,9 @@ export function GameCover({
           <p className="line-clamp-2 text-[13px] font-medium leading-snug text-neutral-200 transition-colors group-hover:text-accent">
             {name}
           </p>
-          {(game.releaseYear || platform) && (
+          {caption ? (
+            <div className="mt-0.5">{caption}</div>
+          ) : (game.releaseYear || platform) && (
             <p className="mt-0.5 truncate font-mono text-[11px] text-neutral-500">
               {game.releaseYear}
               {game.releaseYear && platform && (

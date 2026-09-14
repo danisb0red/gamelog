@@ -26,7 +26,7 @@ type GameResult = {
  * rows big enough to hit, and the back button to leave. The header keeps the
  * inline version from `md` up, where there is room for it.
  */
-export function SearchView() {
+export function SearchView({ idle }: { idle?: React.ReactNode }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GameResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -112,9 +112,14 @@ export function SearchView() {
         )}
 
         {!trimmed && (
-          <p className="px-1 font-mono text-[11px] uppercase tracking-[0.15em] text-neutral-600">
-            Find a game to log
-          </p>
+          <>
+            <p className="px-1 font-mono text-[11px] uppercase tracking-[0.15em] text-neutral-600">
+              Find a game to log
+            </p>
+            {/* An empty search screen used to be just that. Now it opens on
+                what's coming out, which is also how phones reach the calendar. */}
+            {idle && <div className="mt-6">{idle}</div>}
+          </>
         )}
 
         <ul className="divide-y divide-neutral-800/60">

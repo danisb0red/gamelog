@@ -1,9 +1,11 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { eq, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { igdbCache } from "@/lib/db/schema";
 import type {
+  ReleaseEntry,
+  ReleaseKind,
   DeveloperPage,
   GameDetail,
   GameProvider,
@@ -158,6 +160,12 @@ async function cacheSet(key: string, value: unknown, expiresAt: Date): Promise<v
       .insert(igdbCache)
       .values({ key, value, expiresAt })
       .onConflictDoUpdate({ target: igdbCache.key, set: { value, expiresAt } });
+    // Release windows put today's date in the query, so yesterday's keys are
+    // never requested again and would sit in the table for good. An occasional
+    // sweep keeps it bounded without needing a scheduler.
+    if (Math.random() < 0.02) {
+      await db.delete(igdbCache).where(lt(igdbCache.expiresAt, new Date()));
+    }
   } catch (err) {
     console.error("igdb_cache write failed (L1 still holds it):", err);
   }
@@ -440,7 +448,129 @@ export const igdbProvider: GameProvider = {
     const rows = await igdbQuery<RawGame[]>("games", body);
     return rows.map(toSummary);
   },
+  async getReleases(from, to, gameIds = []): Promise<ReleaseEntry[]> {
+    const start = dayToUnix(from);
+    const end = dayToUnix(to);
+    // date_format = 0 is exact-day precision. Anything vaguer still carries a
+    // timestamp — a "Q3 2026" game is stamped Sep 30 — so without this filter
+    // every quarter-dated game would claim to release on the last day of it.
+    const window = `date >= ${start} & date < ${end} & date_format = 0 & game.game_type = (${RELEASE_GAME_TYPES})`;
+
+    const queries = [fetchReleaseRows(`${window} & game.hypes > 0`)];
+    const ids = [...new Set(gameIds)].filter(Number.isInteger);
+    if (ids.length > 0) queries.push(fetchReleaseRows(`${window} & game = (${ids.join(",")})`));
+
+    const rows = (await Promise.all(queries)).flat();
+    return groupReleaseRows(rows);
+  },
 };
+
+/** Main games, remakes, remasters and expanded editions. Not DLC, bundles, ports or mods. */
+const RELEASE_GAME_TYPES = "0,8,9,10";
+const EDITION: Record<number, ReleaseEntry["edition"]> = { 8: "remake", 9: "remaster", 10: "expanded" };
+
+/** Release dates move — delays land weekly — so this is fresher than game metadata. */
+const RELEASES_TTL_SECONDS = 60 * 60 * 3;
+
+/** IGDB's hard page size. A busy month is ~600 anticipated rows, so paginate. */
+const PAGE = 500;
+const MAX_PAGES = 6;
+
+type RawRelease = {
+  date: number;
+  status?: number;
+  release_region?: number;
+  platform?: { abbreviation?: string; name?: string };
+  game?: RawGame & { hypes?: number; game_type?: number };
+};
+
+function dayToUnix(day: string): number {
+  const [y, m, d] = day.split("-").map(Number);
+  return Date.UTC(y, m - 1, d) / 1000;
+}
+
+async function fetchReleaseRows(where: string): Promise<RawRelease[]> {
+  const out: RawRelease[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const rows = await igdbQuery<RawRelease[]>(
+      "release_dates",
+      `fields date, status, release_region, platform.abbreviation, platform.name,
+         game.name, game.slug, game.first_release_date, game.cover.image_id,
+         game.hypes, game.game_type;
+       where ${where};
+       sort date asc;
+       limit ${PAGE};
+       offset ${page * PAGE};`,
+      RELEASES_TTL_SECONDS,
+    );
+    out.push(...rows);
+    if (rows.length < PAGE) break;
+  }
+  return out;
+}
+
+/** IGDB release statuses. Offline, cancelled and compatibility patches aren't releases. */
+const STATUS_EXCLUDED = new Set([4, 5, 35, 36]);
+const STATUS_KIND: Record<number, ReleaseKind> = { 1: "early-access", 2: "early-access", 3: "early-access", 34: "advanced-access" };
+const KIND_RANK: Record<ReleaseKind, number> = { launch: 0, "re-release": 1, "advanced-access": 2, "early-access": 3 };
+
+const REGION_NAME: Record<number, string> = {
+  1: "Europe", 2: "North America", 3: "Australia", 4: "New Zealand",
+  5: "Japan", 6: "China", 7: "Asia", 9: "Korea", 10: "Brazil",
+};
+
+/** A game held back more than this after its first release is arriving on new
+ *  platforms, not launching — Fallout 76 on PS5 in 2026, say. */
+const RE_RELEASE_GAP_SECONDS = 60 * 24 * 60 * 60;
+
+/**
+ * One row per game per platform per region per stage comes back; the calendar
+ * wants one entry per game per day. Merge platforms, pick the most meaningful
+ * stage for that day, and collapse regions to "worldwide" when any row is.
+ */
+function groupReleaseRows(rows: RawRelease[]): ReleaseEntry[] {
+  type Acc = { row: RawRelease; platforms: Set<string>; regions: Set<number>; kinds: Set<ReleaseKind> };
+  const byKey = new Map<string, Acc>();
+
+  for (const r of rows) {
+    const g = r.game;
+    if (!g?.id || !g.slug) continue;
+    if (r.status != null && STATUS_EXCLUDED.has(r.status)) continue;
+
+    const date = new Date(r.date * 1000).toISOString().slice(0, 10);
+    const key = `${g.id}:${date}`;
+    const acc = byKey.get(key) ?? { row: r, platforms: new Set(), regions: new Set(), kinds: new Set() };
+
+    const plat = r.platform?.abbreviation ?? r.platform?.name;
+    if (plat) acc.platforms.add(plat);
+    if (r.release_region != null) acc.regions.add(r.release_region);
+
+    let kind: ReleaseKind = (r.status != null && STATUS_KIND[r.status]) || "launch";
+    if (kind === "launch" && g.first_release_date && r.date - g.first_release_date > RE_RELEASE_GAP_SECONDS) {
+      kind = "re-release";
+    }
+    acc.kinds.add(kind);
+    byKey.set(key, acc);
+  }
+
+  return [...byKey.values()]
+    .map(({ row, platforms, regions, kinds }): ReleaseEntry => {
+      const g = row.game!;
+      const kind = [...kinds].sort((a, b) => KIND_RANK[a] - KIND_RANK[b])[0];
+      const worldwide = regions.size === 0 || regions.has(8) || regions.has(2) || regions.has(1);
+      const onlyRegion = !worldwide && regions.size === 1 ? REGION_NAME[[...regions][0]] ?? null : null;
+      return {
+        game: toSummary(g),
+        date: new Date(row.date * 1000).toISOString().slice(0, 10),
+        platforms: [...platforms].sort(),
+        kind,
+        hype: g.hypes ?? 0,
+        region: onlyRegion,
+        edition: (g.game_type != null && EDITION[g.game_type]) || null,
+      };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date) || b.hype - a.hype);
+}
 
 type RawDetail = RawGame & {
   summary?: string;

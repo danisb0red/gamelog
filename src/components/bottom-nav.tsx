@@ -125,7 +125,7 @@ export function BottomNav({ username }: { username: string | null }) {
   return (
     <nav
       aria-label="Primary"
-      className="tab-bar safe-b fixed inset-x-0 bottom-0 z-50 border-t border-neutral-800/70 md:hidden"
+      className="tab-bar safe-b fixed inset-x-0 bottom-0 z-50 border-t border-neutral-800/70 backdrop-blur-xl backdrop-saturate-150 md:hidden"
     >
       <ul className="flex">
         {tabs.map((t) => {

@@ -1,5 +1,5 @@
 import "server-only";
-import type { DeveloperPage, GameDetail, GameProvider, GameSummary } from "./types";
+import type { DeveloperPage, GameDetail, GameProvider, GameSummary, ReleaseEntry } from "./types";
 
 /**
  * RAWG provider. Server-only — API key stays on the server.
@@ -265,6 +265,12 @@ export const rawgProvider: GameProvider = {
         coverUrl: g.background_image,
         releaseYear: g.released ? Number(g.released.slice(0, 4)) : null,
       }));
+  },
+
+  // RAWG's upcoming-releases data isn't on the free tier; the calendar renders
+  // its empty state rather than guessing.
+  async getReleases(): Promise<ReleaseEntry[]> {
+    return [];
   },
 };
 
