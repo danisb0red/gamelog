@@ -4,17 +4,16 @@ import { ListCards } from "@/components/list-cards";
 import { CreateListModal } from "@/components/create-list-modal";
 import { Favorites } from "@/components/favorites";
 import { Wishlist } from "@/components/wishlist";
-import { Shelf, EmptyShelf } from "@/components/shelf";
-import { GameCover } from "@/components/game-cover";
+import { ActivityTimeline } from "@/components/activity-timeline";
 import {
   getProfileByUsername,
   getUserGames,
   getUserLists,
   getUserFavorites,
   getUserWishlist,
+  getRecentLogs,
 } from "@/lib/db/queries";
 import { getUser } from "@/lib/auth";
-import { getMessage } from "@/lib/personality";
 import { PixelMemoryCard } from "@/components/pixel";
 
 export const dynamic = "force-dynamic";
@@ -30,12 +29,13 @@ export default async function ProfilePage({
   const profile = await getProfileByUsername(username);
   if (!profile) notFound();
 
-  const [all, userLists, userFavorites, userWishlist, viewer] = await Promise.all([
+  const [all, userLists, userFavorites, userWishlist, viewer, recent] = await Promise.all([
     getUserGames(profile.id),
     getUserLists(profile.id),
     getUserFavorites(profile.id),
     getUserWishlist(profile.id),
     getUser(),
+    getRecentLogs(profile.id, 5),
   ]);
   const isOwner = viewer?.id === profile.id;
 
@@ -168,13 +168,6 @@ export default async function ProfilePage({
               </span>
             </div>
           </div>
-
-          <Link
-            href={`/u/${profile.username}/diary`}
-            className="mt-6 inline-block sm:mt-7 font-mono text-[11px] uppercase tracking-[0.15em] text-accent transition hover:brightness-125"
-          >
-            Read the diary →
-          </Link>
         </header>
 
         <div className="rule-pixel mt-8 sm:mt-10" aria-hidden="true">
@@ -182,6 +175,26 @@ export default async function ProfilePage({
         </div>
 
         <Favorites favorites={userFavorites} isOwner={isOwner} />
+
+        {/* Diary lives here now instead of in the tab bar: it's your own
+            history. It also replaces a "Recently logged" strip, which was the
+            same rows drawn as covers — two sections for one thing. */}
+        <section className="mb-10 sm:mb-12">
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <h2 className="font-display text-2xl font-semibold tracking-tight text-neutral-100">
+              Diary
+            </h2>
+            {recent.length > 0 && (
+              <Link
+                href={`/u/${profile.username}/diary`}
+                className="shrink-0 font-mono text-[11px] uppercase tracking-[0.15em] text-neutral-400 transition-colors hover:text-accent"
+              >
+                Full diary →
+              </Link>
+            )}
+          </div>
+          <ActivityTimeline entries={recent} />
+        </section>
 
         {(userLists.length > 0 || isOwner) && (
           <section className="mb-10 sm:mb-12">
@@ -197,30 +210,6 @@ export default async function ProfilePage({
 
         <Wishlist games={userWishlist} isOwner={isOwner} />
 
-        {/* The collection itself lives at /u/[username]/shelf now. This is the
-            last few covers as a sign of life, not a browsable copy of it —
-            already-fetched rows, so it costs no extra query. */}
-        <Shelf
-          title="Recently logged"
-          action={
-            all.length > 0
-              ? { href: `/u/${profile.username}/shelf`, text: "Full shelf" }
-              : undefined
-          }
-        >
-          {all.length > 0 ? (
-            all
-              .slice(0, 12)
-              .map((g, i) => (
-                <GameCover key={g.gameId} game={g} size="sm" priorityIndex={i} />
-              ))
-          ) : (
-            <EmptyShelf
-              message={getMessage("empty.library")}
-              hint="Search a game to add it to your shelf."
-            />
-          )}
-        </Shelf>
       </div>
     </main>
   );

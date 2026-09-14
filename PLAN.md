@@ -257,6 +257,17 @@ never offered — the API no-ops on one, which would otherwise look like a dead
 button. No API change was needed; `POST /api/lists/:id/items` already checked
 ownership, cached the game and appended.
 
+### Navigation order
+Phone tab bar: **Home · Shelf · Releases · Search · You** (signed out: Home ·
+Releases · Search · Sign in). Desktop nav uses the same order: Home · Shelf ·
+Releases · You, with search in the header.
+- **Diary has no tab.** It's your own history, so it lives on You as a Diary
+  section (last 5 entries + "Full diary"). That section replaced a "Recently
+  logged" cover strip that showed the same rows, and the small "Read the
+  diary" header link. The You tab stays active on `/u/<you>/diary`.
+- **Search stays a tab** — below `md` it is the only search on the site, and
+  finding a game is the first step of logging anything.
+
 ### "You" is a nav destination, not a dropdown item
 Lists, Wishlist and Favorites render **only** on the profile, and the avatar
 dropdown was the only link to your own profile anywhere in the app (the other

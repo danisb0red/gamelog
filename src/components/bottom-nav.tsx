@@ -51,11 +51,12 @@ function IconShelf() {
   );
 }
 
-function IconDiary() {
+/** A calendar page — the release calendar. */
+function IconReleases() {
   return (
     <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true" {...stroke}>
-      <path d="M5.5 4h11a1 1 0 0 1 1 1v15l-3-2-3 2-3-2-3 2V5a1 1 0 0 1 1-1z" />
-      <path d="M8.5 8.5h5M8.5 12h5" />
+      <rect x="3.5" y="5" width="17" height="15" rx="2" />
+      <path d="M3.5 9.5h17M8 3v4M16 3v4M8 13.5h2M14 13.5h2M8 16.5h2" />
     </svg>
   );
 }
@@ -83,9 +84,10 @@ function IconYou() {
 export function BottomNav({ username }: { username: string | null }) {
   const pathname = usePathname();
 
+  // Home · Shelf · Releases · Search · You. Diary has no tab: it's your own
+  // history and lives on You, which stays lit while you're reading it.
   const tabs: Tab[] = [
     { href: "/", label: "Home", icon: <IconHome />, match: (p) => p === "/" },
-    { href: "/search", label: "Search", icon: <IconSearch />, match: (p) => p.startsWith("/search") },
     ...(username
       ? [
           {
@@ -94,32 +96,25 @@ export function BottomNav({ username }: { username: string | null }) {
             icon: <IconShelf />,
             match: (p: string) => p === `/u/${username}/shelf`,
           },
-          {
-            href: `/u/${username}/diary`,
-            label: "Diary",
-            icon: <IconDiary />,
-            match: (p: string) => p === `/u/${username}/diary`,
-          },
-          // Lists, Wishlist and Favorites live on the profile and nowhere else,
-          // and until this tab existed the only route to any of them was an
-          // unlabelled avatar in the far corner, then a dropdown. Five tabs puts
-          // each at 78px on a 390px screen — comfortably past the 44pt minimum.
-          {
-            href: `/u/${username}`,
-            label: "You",
-            icon: <IconYou />,
-            // Exact: /shelf and /diary sit underneath and own their own tabs.
-            match: (p: string) => p === `/u/${username}`,
-          },
         ]
-      : [
-          {
-            href: "/login",
-            label: "Sign in",
-            icon: <IconYou />,
-            match: (p: string) => p.startsWith("/login"),
-          },
-        ]),
+      : []),
+    { href: "/releases", label: "Releases", icon: <IconReleases />, match: (p) => p.startsWith("/releases") },
+    // Search stays a tab: on a phone it is the only search there is (the
+    // header box is hidden below md), and finding a game is how anything gets logged.
+    { href: "/search", label: "Search", icon: <IconSearch />, match: (p) => p.startsWith("/search") },
+    username
+      ? {
+          href: `/u/${username}`,
+          label: "You",
+          icon: <IconYou />,
+          match: (p: string) => p === `/u/${username}` || p.startsWith(`/u/${username}/diary`),
+        }
+      : {
+          href: "/login",
+          label: "Sign in",
+          icon: <IconYou />,
+          match: (p: string) => p.startsWith("/login"),
+        },
   ];
 
   return (

@@ -27,16 +27,12 @@ export async function AppHeader() {
     profile = await getProfileById(user.id);
   }
 
+  // Same order as the mobile tab bar. Diary is reached from You.
   const nav = [
     { href: "/", label: "Home" },
+    ...(profile ? [{ href: `/u/${profile.username}/shelf`, label: "Shelf" }] : []),
     { href: "/releases", label: "Releases" },
-    ...(profile
-      ? [
-          { href: `/u/${profile.username}/shelf`, label: "Shelf" },
-          { href: `/u/${profile.username}/diary`, label: "Diary" },
-          { href: `/u/${profile.username}`, label: "You" },
-        ]
-      : []),
+    ...(profile ? [{ href: `/u/${profile.username}`, label: "You" }] : []),
   ];
 
   return (
