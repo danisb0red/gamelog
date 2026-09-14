@@ -19,7 +19,7 @@ const spaceGrotesk = Space_Grotesk({
   weight: ["500", "600", "700"],
 });
 
-/** Metadata — counts, dates, platforms, status. The save-file register. */
+/** Metadata — counts, dates, platforms, status. */
 const spaceMono = Space_Mono({
   variable: "--font-space-mono",
   subsets: ["latin"],

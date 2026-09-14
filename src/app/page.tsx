@@ -103,8 +103,7 @@ export default async function Home() {
       <div className="mx-auto w-full max-w-6xl px-5 pb-20">
         {/* ── Hero ─────────────────────────────────────────────────────── */}
         <header className="pb-6 pt-16">
-          <span className="hud-label">Save file</span>
-          <h1 className="mt-4 font-display text-4xl font-bold tracking-tight text-neutral-50 sm:text-6xl">
+          <h1 className="font-display text-4xl font-bold tracking-tight text-neutral-50 sm:text-6xl">
             {name}
             <span className="text-accent">.</span>
           </h1>

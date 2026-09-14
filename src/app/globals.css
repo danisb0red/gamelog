@@ -4,7 +4,7 @@
    GameLog — "The Shelf"
    ----------------------------------------------------------------------------
    Visual metaphor: your games are physical objects on a lit shelf, and your
-   profile is a save file. Everything below serves that idea.
+   profile is your collection. Everything below serves that idea.
 
    Three deliberate decisions:
 
@@ -18,7 +18,7 @@
    2. THREE TYPEFACES WITH DISTINCT JOBS. Display (Space Grotesk) for editorial
       headings, body (Figtree) for reading, mono (Space Mono) for metadata —
       counts, dates, platforms, status labels. The mono is what makes it read as
-      a *system* rather than a webpage: it's the save-file/HUD register.
+      a *system* rather than a webpage.
 
    3. STATUS IS A COLOR LANGUAGE. Playing, finished, backlog, replaying and
       dropped each own a hue, used consistently on pips, borders, glows and

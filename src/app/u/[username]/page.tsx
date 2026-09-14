@@ -14,7 +14,6 @@ import {
   getRecentLogs,
 } from "@/lib/db/queries";
 import { getUser } from "@/lib/auth";
-import { PixelMemoryCard } from "@/components/pixel";
 
 export const dynamic = "force-dynamic";
 
@@ -51,9 +50,9 @@ export default async function ProfilePage({
   // the game they care most about.
   const identityArt = userFavorites[0]?.coverUrl ?? all[0]?.coverUrl ?? null;
 
-  // ── Save-screen fields ───────────────────────────────────────────────────
+  // ── Profile details ──────────────────────────────────────────────────────
   // `all` is ordered newest-first, so the head is the most recent log.
-  const lastSave = all[0]
+  const lastLogged = all[0]
     ? new Date(all[0].loggedAt)
         .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
         .toUpperCase()
@@ -77,12 +76,10 @@ export default async function ProfilePage({
 
       <div className="mx-auto w-full max-w-6xl px-5 pb-16 sm:pb-20">
         {/* ── Identity card ──────────────────────────────────────────────
-            A save-file header rather than a social-media profile: monogram
-            plate, handle in mono, and the three headline numbers set large. */}
+            Monogram plate, handle in mono, and the headline numbers set large.
+            No label above the name: the name already says whose page this is. */}
         <header className="pt-8 sm:pt-16">
-          <span className="hud-label">Save file</span>
-
-          <div className="mt-4 flex flex-wrap items-end gap-x-5 gap-y-5 sm:mt-5 sm:gap-x-7 sm:gap-y-6">
+          <div className="flex flex-wrap items-end gap-x-5 gap-y-5 sm:mt-5 sm:gap-x-7 sm:gap-y-6">
             <div
               className="flex h-14 w-14 shrink-0 items-center justify-center bg-accent font-display text-2xl font-bold text-accent-foreground sm:h-20 sm:w-20 sm:text-3xl"
               style={{ clipPath: "polygon(0 0,100% 0,100% 76%,76% 100%,0 100%)" }}
@@ -120,28 +117,13 @@ export default async function ProfilePage({
             </div>
           </div>
 
-          {/*
-            Save-file details.
-
-            The fields a save screen actually shows you — when, how far, where —
-            computed from real logs, so this is information first and atmosphere
-            second. The memory-card glyph is the only reference here and it is
-            unlabelled on purpose: a small object sitting beside save data, for
-            anyone who recognises it.
-          */}
+          {/* When you last logged, how much is finished, and where you play —
+              all computed from real logs. */}
           <div className="mt-6 border-t border-neutral-800/70 pt-5 sm:mt-8">
             <div className="flex flex-wrap items-start gap-x-10 gap-y-5">
-              {/* The hiding has to happen on a wrapper. PixelMemoryCard hardcodes
-                  `inline-block`, and Tailwind emits `.inline-block` *after*
-                  `.hidden` in the same layer — so `hidden` on the glyph itself
-                  silently loses and the mark stayed visible on phones. */}
-              <span className="hidden sm:block">
-                <PixelMemoryCard size={24} className="mt-1 shrink-0 text-neutral-700" />
-              </span>
-
               <dl className="grid flex-1 grid-cols-2 gap-x-4 gap-y-4 sm:flex sm:flex-wrap sm:gap-x-10">
                 {[
-                  { k: "Last save", v: lastSave },
+                  { k: "Last logged", v: lastLogged },
                   {
                     k: "Completed",
                     v: `${finishedCount} of ${all.length}`,
@@ -157,12 +139,10 @@ export default async function ProfilePage({
                 ))}
               </dl>
 
-              {/* Print registration mark — an artefact from the manual this page
-                  is pretending to be. Easy to never notice.
-
-                  Same trap as the glyph above, for a different reason: `.reg-mark`
-                  is unlayered CSS and sets its own `display`, so it beats any
-                  Tailwind utility no matter the order. Hence the wrapper. */}
+              {/* Print registration mark — a small printed-matter detail, easy
+                  to never notice. Hidden via a wrapper: `.reg-mark` is unlayered
+                  CSS that sets its own `display`, so it beats any Tailwind
+                  utility — `hidden` on the mark itself would silently lose. */}
               <span className="ml-auto hidden sm:block" aria-hidden="true">
                 <span className="reg-mark mt-1.5 text-neutral-700" />
               </span>

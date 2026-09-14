@@ -111,7 +111,7 @@ labels, screenshots, TestFlight. Tracked in the audit, not here.
 | 2026-08-16 | Design tokens ported by value | Identity lives in the hex values + type hierarchy, not in CSS. |
 
 ### Round 2 — review feedback ☑ (2026-08-16)
-- ☑ "Save file" removed from Home and Profile (no game-vocabulary labels left)
+- ☑ "Save file" removed from Home and Profile, "Last save" → "Last logged", memory-card glyph removed (2026-09-14 — an earlier note here claimed this before it was actually true on the web)
 - ☑ Favourites on Profile — four slots, empty ones drawn; new `GET /api/v1/favorites`
 - ☑ Developer name on a game page is now tappable → Developer screen;
   new `GET /api/v1/developers/[slug]`
