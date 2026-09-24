@@ -17,6 +17,7 @@ import {
 import { MonthHeader } from "@/components/releases/month-header";
 import { ReleaseCalendar, type CalendarView } from "@/components/releases/release-calendar";
 import { ReleaseSpotlight } from "@/components/releases/release-spotlight";
+import { CalendarSubscribe } from "@/components/releases/calendar-subscribe";
 import { CalendarSkeleton } from "@/components/releases/calendar-skeleton";
 import type { Mine } from "@/components/releases/release-row";
 
@@ -64,6 +65,11 @@ async function MonthReleases({ month, view, family }: { month: string; view: Cal
 
   return (
     <>
+      {user && (
+        <div className="mt-4">
+          <CalendarSubscribe />
+        </div>
+      )}
       {spot?.entry.game.coverUrl && (
         <div className="ambient" style={{ backgroundImage: `url(${spot.entry.game.coverUrl})` }} />
       )}

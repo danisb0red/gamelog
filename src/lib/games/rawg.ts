@@ -272,6 +272,10 @@ export const rawgProvider: GameProvider = {
   async getReleases(): Promise<ReleaseEntry[]> {
     return [];
   },
+
+  async getReleasesForGames(): Promise<ReleaseEntry[]> {
+    return [];
+  },
 };
 
 type RawgDetail = RawgGame & {

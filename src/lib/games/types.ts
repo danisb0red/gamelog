@@ -90,4 +90,10 @@ export interface GameProvider {
    * someone's wishlist still shows up on their calendar.
    */
   getReleases(from: string, to: string, gameIds?: number[]): Promise<ReleaseEntry[]>;
+  /**
+   * Exact-day releases in [from, to) for exactly these games and nothing else.
+   * Unlike getReleases it skips the anticipated-games sweep, which is most of
+   * that call's cost and none of what a personal feed needs.
+   */
+  getReleasesForGames(from: string, to: string, gameIds: number[]): Promise<ReleaseEntry[]>;
 }

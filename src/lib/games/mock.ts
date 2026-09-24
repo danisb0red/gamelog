@@ -92,4 +92,9 @@ export const mockProvider: GameProvider = {
       edition: null,
     }));
   },
+
+  async getReleasesForGames(from, to, gameIds): Promise<ReleaseEntry[]> {
+    const ids = new Set(gameIds);
+    return (await this.getReleases(from, to)).filter((e) => ids.has(e.game.id));
+  },
 };
