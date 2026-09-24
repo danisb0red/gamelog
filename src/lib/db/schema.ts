@@ -157,3 +157,34 @@ export const igdbCache = pgTable("igdb_cache", {
   value: jsonb("value").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 });
+
+/**
+ * Game Pass catalog snapshot, mirrored from Microsoft's public feeds.
+ *
+ * Server infrastructure like `igdb_cache` (RLS on, no policies). `igdb_game_id`
+ * is deliberately not a foreign key: `games` only holds games someone has
+ * logged or viewed, and most of the catalog has been neither.
+ *
+ * `state` is catalog | recent | leaving. Microsoft publishes no leaving dates,
+ * so `leaving_since` is when *we* first saw the product in the leaving list —
+ * never presented as a departure date.
+ */
+export const gamepassProducts = pgTable("gamepass_products", {
+  productId: text("product_id").primaryKey(), // Microsoft store "big id"
+  igdbGameId: bigint("igdb_game_id", { mode: "number" }),
+  title: text("title").notNull(),
+  state: text("state").notNull(),
+  firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).defaultNow().notNull(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+  leavingSince: timestamp("leaving_since", { withTimezone: true }),
+  // When we last tried to match it to IGDB, so misses are retried slowly
+  // (IGDB links new releases days after launch) instead of on every refresh.
+  matchCheckedAt: timestamp("match_checked_at", { withTimezone: true }),
+});
+
+/** One row (`id = 'main'`): when the snapshot was last refreshed / attempted. */
+export const gamepassSync = pgTable("gamepass_sync", {
+  id: text("id").primaryKey(),
+  refreshedAt: timestamp("refreshed_at", { withTimezone: true }),
+  attemptedAt: timestamp("attempted_at", { withTimezone: true }),
+});

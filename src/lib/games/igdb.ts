@@ -171,7 +171,7 @@ async function cacheSet(key: string, value: unknown, expiresAt: Date): Promise<v
   }
 }
 
-async function igdbQuery<T>(
+export async function igdbQuery<T>(
   endpoint: string,
   body: string,
   revalidateSeconds = 60 * 60 * 24, // 24h; game metadata barely changes
