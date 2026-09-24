@@ -15,6 +15,10 @@ const eslintConfig = defineConfig([
     // The Expo app is a separate project with its own toolchain — Next's
     // web rules (jsx-a11y, next/image) don't apply to React Native views.
     "mobile/**",
+    // Agent worktrees live inside the repo while parallel work is in flight,
+    // each with its own node_modules and build output. Linting them reported
+    // ~18,000 phantom problems against the real tree.
+    ".claude/**",
   ]),
 ]);
 

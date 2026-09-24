@@ -37,5 +37,5 @@
   // root package.json: "Cannot find module 'react-native'".
   //
   // The mobile app is still type-checked, just on its own: cd mobile && tsc.
-  "exclude": ["node_modules", "mobile"]
+  "exclude": ["node_modules", "mobile", ".claude"]
 }

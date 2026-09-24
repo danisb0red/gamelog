@@ -81,11 +81,10 @@ export function buildCalendar({
   now = new Date(),
 }: {
   entries: ReleaseEntry[];
-  /** Site origin, e.g. "https://gamelog-liard.vercel.app". Also supplies the UID domain. */
+  /** Site origin, e.g. "https://gamelog-liard.vercel.app" — used for event links. */
   origin: string;
   now?: Date;
 }): string {
-  const host = new URL(origin).host;
   const today = todayUtc(now);
   // Midnight of today rather than the instant of the request: DTSTAMP moving on
   // every poll would make each fetch look like a change to a diffing client.
@@ -114,7 +113,10 @@ export function buildCalendar({
       "BEGIN:VEVENT",
       // Per game, not per date: when IGDB moves the release the same UID comes
       // back with a new DTSTART and the calendar updates the event in place.
-      `UID:game-${e.game.id}@${host}`,
+      // The suffix is a constant, not the site's hostname: a UID that changed
+      // with the domain would duplicate every event in every subscriber's
+      // calendar the day we move off the vercel.app address.
+      `UID:game-${e.game.id}@gamelog`,
       `DTSTAMP:${stamp}`,
       `DTSTART;VALUE=DATE:${compact(e.date)}`,
       // DTEND is exclusive for all-day events.

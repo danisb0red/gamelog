@@ -1,5 +1,5 @@
 import "server-only";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { logs, wishlist } from "@/lib/db/schema";
 import { gameProvider } from "@/lib/games";
@@ -16,9 +16,15 @@ const DAYS_AHEAD = 548;
  * was cancelled" and would wipe the user's events until the next good poll.
  */
 export async function buildFeedForUser(userId: string, origin: string): Promise<string> {
+  // Games you are waiting on, not everything you've ever logged: a finished or
+  // dropped game that gets a re-release a year later would otherwise put an
+  // event in your calendar for something you have no reason to be reminded of.
   const [wished, shelved] = await Promise.all([
     db.select({ id: wishlist.gameId }).from(wishlist).where(eq(wishlist.userId, userId)),
-    db.select({ id: logs.gameId }).from(logs).where(eq(logs.userId, userId)),
+    db
+      .select({ id: logs.gameId })
+      .from(logs)
+      .where(and(eq(logs.userId, userId), inArray(logs.status, ["backlog", "playing", "replaying"]))),
   ]);
   const ids = [...new Set([...wished, ...shelved].map((r) => r.id))];
 
