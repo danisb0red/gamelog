@@ -1,10 +1,21 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ShelfBrowser } from "@/components/shelf-browser";
-import { getProfileByUsername, getUserGames } from "@/lib/db/queries";
+import type { Metadata } from "next";
+import { getUserGames } from "@/lib/db/queries";
+import { getProfileCached } from "@/lib/db/cached";
+import { profileMetadata } from "@/lib/seo-profile";
 import { isStatus } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  return profileMetadata((await params).username, "shelf");
+}
 
 export default async function ShelfPage({
   params,
@@ -15,7 +26,7 @@ export default async function ShelfPage({
 }) {
   const { username } = await params;
   const { status, platform } = await searchParams;
-  const profile = await getProfileByUsername(username);
+  const profile = await getProfileCached(username);
   if (!profile) notFound();
 
   const all = await getUserGames(profile.id);

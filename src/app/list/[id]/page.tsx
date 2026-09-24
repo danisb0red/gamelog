@@ -1,11 +1,38 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getList } from "@/lib/db/queries";
+import type { Metadata } from "next";
+import { getListCached } from "@/lib/db/cached";
 import { getUser } from "@/lib/auth";
 import { ListItems } from "@/components/list-items";
 import { AddGamesToList } from "@/components/add-games-to-list";
+import { NOINDEX, pageMetadata, truncate } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const list = await getListCached(id).catch((err) => {
+    console.error("[seo] list lookup failed:", err);
+    return null;
+  });
+  // A private list's title is the owner's business; don't put it in a tab
+  // title or a link preview.
+  if (!list || !list.isPublic) return { title: "List", robots: NOINDEX };
+  const count = `${list.items.length} ${list.items.length === 1 ? "game" : "games"}`;
+  const by = list.displayName ?? list.username;
+  return pageMetadata({
+    title: list.title,
+    description: list.description
+      ? truncate(list.description)
+      : `A list of ${count} by ${by} on GameLog.`,
+    path: `/list/${list.id}`,
+    ownImage: true,
+  });
+}
 
 export default async function ListPage({
   params,
@@ -13,7 +40,7 @@ export default async function ListPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [list, user] = await Promise.all([getList(id), getUser()]);
+  const [list, user] = await Promise.all([getListCached(id), getUser()]);
   if (!list) notFound();
 
   const isOwner = user?.id === list.userId;

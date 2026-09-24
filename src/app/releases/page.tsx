@@ -14,6 +14,7 @@ import {
   parseMonth,
   todayUtc,
 } from "@/lib/releases";
+import { pageMetadata } from "@/lib/seo";
 import { MonthHeader } from "@/components/releases/month-header";
 import { ReleaseCalendar, type CalendarView } from "@/components/releases/release-calendar";
 import { ReleaseSpotlight } from "@/components/releases/release-spotlight";
@@ -21,10 +22,21 @@ import { CalendarSubscribe } from "@/components/releases/calendar-subscribe";
 import { CalendarSkeleton } from "@/components/releases/calendar-skeleton";
 import type { Mine } from "@/components/releases/release-row";
 
-export const metadata: Metadata = { title: "Releases · GameLog" };
 export const dynamic = "force-dynamic";
 
 type Params = { month?: string; view?: string; platform?: string };
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<Params> }): Promise<Metadata> {
+  const month = parseMonth((await searchParams).month);
+  const label = formatDay(`${month}-01`, { month: "long", year: "numeric" });
+  // Canonical keeps only the month: view/platform filters show a subset of the
+  // same page and shouldn't compete with it in search.
+  return pageMetadata({
+    title: `Game releases, ${label}`,
+    description: `Video game release dates for ${label}, by day and platform.`,
+    path: `/releases?month=${month}`,
+  });
+}
 
 export default async function ReleasesPage({ searchParams }: { searchParams: Promise<Params> }) {
   const sp = await searchParams;

@@ -5,8 +5,10 @@ import { CreateListModal } from "@/components/create-list-modal";
 import { Favorites } from "@/components/favorites";
 import { Wishlist } from "@/components/wishlist";
 import { ActivityTimeline } from "@/components/activity-timeline";
+import type { Metadata } from "next";
+import { getProfileCached } from "@/lib/db/cached";
+import { profileMetadata } from "@/lib/seo-profile";
 import {
-  getProfileByUsername,
   getUserGames,
   getUserLists,
   getUserFavorites,
@@ -17,6 +19,14 @@ import { getUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  return profileMetadata((await params).username);
+}
+
 // No searchParams: the shelf filters moved to /u/[username]/shelf, and the old
 // links that carried them are redirected in src/proxy.ts before this renders.
 export default async function ProfilePage({
@@ -25,7 +35,7 @@ export default async function ProfilePage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
-  const profile = await getProfileByUsername(username);
+  const profile = await getProfileCached(username);
   if (!profile) notFound();
 
   const [all, userLists, userFavorites, userWishlist, viewer, recent] = await Promise.all([

@@ -4,6 +4,7 @@ import "./globals.css";
 import { AppHeader } from "@/components/app-header";
 import { Konami } from "@/components/konami";
 import { HiddenMark } from "@/components/hidden-mark";
+import { siteUrl } from "@/lib/site";
 
 /** Body copy — warm, readable, carried over from the previous identity. */
 const figtree = Figtree({
@@ -27,8 +28,13 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GameLog",
+  // Relative og:image / canonical URLs in every page's metadata resolve
+  // against this, so they come out absolute — crawlers ignore relative ones.
+  metadataBase: new URL(siteUrl()),
+  title: { default: "GameLog", template: "%s · GameLog" },
   description: "Track, rate, and review the games you play.",
+  openGraph: { siteName: "GameLog", type: "website", locale: "en_GB" },
+  twitter: { card: "summary_large_image" },
   // Lets iOS render the home-screen app full-screen with a dark status bar
   // instead of a white browser chrome.
   appleWebApp: { capable: true, title: "GameLog", statusBarStyle: "black-translucent" },

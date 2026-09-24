@@ -1,9 +1,20 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { DiaryTimeline } from "@/components/diary-timeline";
-import { getProfileByUsername, getRecentLogs } from "@/lib/db/queries";
+import type { Metadata } from "next";
+import { getRecentLogs } from "@/lib/db/queries";
+import { getProfileCached } from "@/lib/db/cached";
+import { profileMetadata } from "@/lib/seo-profile";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  return profileMetadata((await params).username, "diary");
+}
 
 export default async function DiaryPage({
   params,
@@ -11,7 +22,7 @@ export default async function DiaryPage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
-  const profile = await getProfileByUsername(username);
+  const profile = await getProfileCached(username);
   if (!profile) notFound();
 
   const entries = await getRecentLogs(profile.id, 500);
