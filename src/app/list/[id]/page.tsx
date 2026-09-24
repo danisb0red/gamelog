@@ -41,9 +41,11 @@ export default async function ListPage({
 }) {
   const { id } = await params;
   const [list, user] = await Promise.all([getListCached(id), getUser()]);
-  if (!list) notFound();
-
-  const isOwner = user?.id === list.userId;
+  const isOwner = list != null && user?.id === list.userId;
+  // A private list is the owner's alone. The metadata already hid its title
+  // from link previews, but the page itself served it to anyone with the URL.
+  // 404 rather than 403 so its existence isn't confirmed either.
+  if (!list || (!list.isPublic && !isOwner)) notFound();
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
