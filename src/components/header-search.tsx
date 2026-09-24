@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { QuickLog, type QuickLogMine } from "./quick-log";
 import {
   getSearchEmptyMessage,
   getSearchLoadingMessage,
@@ -14,6 +15,7 @@ type GameResult = {
   slug: string;
   coverUrl: string | null;
   releaseYear: number | null;
+  mine?: QuickLogMine;
 };
 
 /** Global search in the header. Click a result → go to that game's page. */
@@ -31,7 +33,11 @@ export function HeaderSearch() {
   // Close the dropdown on outside click.
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Element;
+      // The "Add details" sheet is portalled to <body>, outside the box, but
+      // clicking in it isn't clicking away — closing would unmount it mid-edit.
+      if (target.closest?.('[role="dialog"]')) return;
+      if (boxRef.current && !boxRef.current.contains(target)) setOpen(false);
     };
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
@@ -115,24 +121,7 @@ export function HeaderSearch() {
 
           {visible.map((g) => (
             <li key={g.id}>
-              <button
-                type="button"
-                onClick={() => goTo(g.slug)}
-                className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-surface-2"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={g.coverUrl ?? ""}
-                  alt=""
-                  className="h-12 w-9 shrink-0 rounded bg-surface-2 object-cover"
-                />
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium">{g.name}</span>
-                  {g.releaseYear && (
-                    <span className="text-xs text-neutral-500">{g.releaseYear}</span>
-                  )}
-                </span>
-              </button>
+              <QuickLog game={g} mine={g.mine} compact onNavigate={() => goTo(g.slug)} />
             </li>
           ))}
         </ul>
