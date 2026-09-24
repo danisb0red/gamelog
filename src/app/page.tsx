@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { OutThisWeek, OutThisWeekSkeleton, YourUpcoming } from "@/components/releases/out-this-week";
+import { YourLeavingGamePass } from "@/components/gamepass/gamepass";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { PopularList } from "@/components/popular-list";
 import { GameCover } from "@/components/game-cover";
@@ -89,6 +90,14 @@ export default async function Home() {
   ]);
   const myGameIds = [...new Set([...allGames.map((g) => g.gameId), ...wishlist.map((g) => g.gameId)])];
 
+  // Games you'd still play: wishlist, or shelf entries not finished/dropped.
+  const leavingCandidates = [
+    ...allGames
+      .filter((g) => g.status === "backlog" || g.status === "playing" || g.status === "replaying")
+      .map((g) => ({ gameId: g.gameId, name: g.gameName, slug: g.gameSlug, coverUrl: g.coverUrl })),
+    ...wishlist.map((g) => ({ gameId: g.gameId, name: g.gameName, slug: g.gameSlug, coverUrl: g.coverUrl })),
+  ].filter((g, i, all) => all.findIndex((x) => x.gameId === g.gameId) === i);
+
   // The hero's ambient wash comes from whatever you're playing right now, so the
   // page is literally coloured by your current game. Falls back to trending.
   const heroArt = playing[0]?.coverUrl ?? popular[0]?.coverUrl ?? null;
@@ -113,6 +122,9 @@ export default async function Home() {
           </p>
           <Suspense fallback={null}>
             <YourUpcoming gameIds={myGameIds} />
+          </Suspense>
+          <Suspense fallback={null}>
+            <YourLeavingGamePass games={leavingCandidates} />
           </Suspense>
         </header>
 

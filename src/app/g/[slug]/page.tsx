@@ -26,6 +26,8 @@ import { FavoriteButton } from "@/components/favorite-button";
 import { WishlistButton } from "@/components/wishlist-button";
 import { Screenshots } from "@/components/screenshots";
 import { RelatedGames } from "@/components/related-games";
+import { GamePassChip } from "@/components/gamepass/gamepass";
+import { getGamePassForGame } from "@/lib/games/gamepass";
 import type { NamedRef } from "@/lib/games/types";
 
 export const dynamic = "force-dynamic";
@@ -116,10 +118,11 @@ export default async function GamePage({
       set: { name: game.name, coverUrl: game.coverUrl, syncedAt: new Date() },
     });
 
-  const [user, aggregate, reviews] = await Promise.all([
+  const [user, aggregate, reviews, gamePass] = await Promise.all([
     getUser(),
     getGameAggregate(game.id),
     getGameReviews(game.id),
+    getGamePassForGame(game.id),
   ]);
   const existing = user ? await getUserLogForGame(user.id, game.id) : null;
   const userLists = user ? await getUserLists(user.id) : [];
@@ -147,6 +150,7 @@ export default async function GamePage({
           )}
         </p>
       )}
+      <GamePassChip info={gamePass} />
     </div>
   );
 
