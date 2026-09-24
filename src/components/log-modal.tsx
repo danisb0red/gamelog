@@ -39,7 +39,6 @@ export function LogModal({
 }) {
   const [open, setOpen] = useState(false);
 
-
   return (
     <>
       <button
@@ -50,21 +49,56 @@ export function LogModal({
         {existing ? "Edit your log" : "Log, rate, review"}
       </button>
 
-      <SheetOverlay open={open} onClose={() => setOpen(false)} className="sm:pt-[10vh]">
-        <div
-          className="sheet px-cut-lg w-full max-w-md overflow-y-auto bg-surface-2 p-5 shadow-2xl ring-1 ring-neutral-800"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <SheetGrip />
-          <LogForm
-            game={game}
-            platforms={platforms}
-            existing={existing}
-            onDone={() => setOpen(false)}
-          />
-        </div>
-      </SheetOverlay>
+      <LogSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        game={game}
+        platforms={platforms}
+        existing={existing}
+      />
     </>
+  );
+}
+
+/**
+ * The sheet on its own, for callers that bring their own trigger (the quick-log
+ * row on search). `amendId` makes the save PATCH that entry instead of adding a
+ * new one — for an entry that was only just created and has nothing else in it.
+ */
+export function LogSheet({
+  open,
+  onClose,
+  game,
+  platforms = [],
+  existing,
+  amendId,
+  onSaved,
+}: {
+  open: boolean;
+  onClose: () => void;
+  game: GameInput;
+  platforms?: string[];
+  existing?: { status: string; rating: string | null; platform: string | null } | null;
+  amendId?: string;
+  onSaved?: (log: { id: string; status: string; rating: number | null }) => void;
+}) {
+  return (
+    <SheetOverlay open={open} onClose={onClose} className="sm:pt-[10vh]">
+      <div
+        className="sheet px-cut-lg w-full max-w-md overflow-y-auto bg-surface-2 p-5 shadow-2xl ring-1 ring-neutral-800"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <SheetGrip />
+        <LogForm
+          game={game}
+          platforms={platforms}
+          existing={existing}
+          amendId={amendId}
+          onSaved={onSaved}
+          onDone={onClose}
+        />
+      </div>
+    </SheetOverlay>
   );
 }
 
@@ -72,11 +106,15 @@ function LogForm({
   game,
   platforms,
   existing,
+  amendId,
+  onSaved,
   onDone,
 }: {
   game: GameInput;
   platforms: string[];
   existing?: { status: string; rating: string | null; platform: string | null } | null;
+  amendId?: string;
+  onSaved?: (log: { id: string; status: string; rating: number | null }) => void;
   onDone: () => void;
 }) {
   const router = useRouter();
@@ -113,14 +151,36 @@ function LogForm({
 
     setConfirmed(true);
 
-    const request = fetch("/api/logs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
+    const request = (
+      amendId
+        ? fetch(`/api/logs/${amendId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              status,
+              rating,
+              review: review || null,
+              platform: platform || null,
+              loggedAt,
+            }),
+          })
+        : fetch("/api/logs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+    )
       .then(async (res) => {
         if (!res.ok) console.error("Log save failed", await res.text());
-        else router.refresh();
+        else {
+          const { log } = await res.json();
+          onSaved?.({
+            id: log.id,
+            status: log.status,
+            rating: log.rating != null ? Number(log.rating) : null,
+          });
+          router.refresh();
+        }
       })
       .catch((err) => console.error("Log save error", err));
 

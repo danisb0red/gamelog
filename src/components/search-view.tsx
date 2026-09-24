@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { QuickLog, type QuickLogMine } from "./quick-log";
 import {
   getSearchEmptyMessage,
   getSearchLoadingMessage,
@@ -14,6 +14,8 @@ type GameResult = {
   slug: string;
   coverUrl: string | null;
   releaseYear: number | null;
+  /** Absent when signed out; null when signed in but not logged. */
+  mine?: QuickLogMine;
 };
 
 /**
@@ -125,31 +127,7 @@ export function SearchView({ idle }: { idle?: React.ReactNode }) {
         <ul className="divide-y divide-neutral-800/60">
           {visible.map((g) => (
             <li key={g.id}>
-              <Link
-                href={`/g/${g.slug}`}
-                className="flex items-center gap-4 py-3 transition-colors active:bg-surface-1"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={g.coverUrl ?? ""}
-                  alt=""
-                  loading="lazy"
-                  className="h-[68px] w-[51px] shrink-0 rounded-[3px] bg-surface-2 object-cover"
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[15px] font-medium leading-snug text-neutral-100">
-                    {g.name}
-                  </span>
-                  {g.releaseYear && (
-                    <span className="mt-0.5 block font-mono text-[11px] text-neutral-500">
-                      {g.releaseYear}
-                    </span>
-                  )}
-                </span>
-                <span aria-hidden="true" className="shrink-0 text-neutral-700">
-                  ›
-                </span>
-              </Link>
+              <QuickLog game={g} mine={g.mine} />
             </li>
           ))}
         </ul>
