@@ -463,7 +463,24 @@ export const igdbProvider: GameProvider = {
     const rows = (await Promise.all(queries)).flat();
     return groupReleaseRows(rows);
   },
+
+  async getReleasesForGames(from, to, gameIds): Promise<ReleaseEntry[]> {
+    // Sorted so the same wishlist always builds the same query body, and with
+    // it the same cache key.
+    const ids = [...new Set(gameIds)].filter(Number.isInteger).sort((a, b) => a - b);
+    const window = `date >= ${dayToUnix(from)} & date < ${dayToUnix(to)} & date_format = 0 & game.game_type = (${RELEASE_GAME_TYPES})`;
+    // fetchReleaseRows runs through the shared 4 req/s limiter, so chunks are
+    // sequential rather than parallel.
+    const rows: RawRelease[] = [];
+    for (let i = 0; i < ids.length; i += RELEASE_ID_CHUNK) {
+      rows.push(...(await fetchReleaseRows(`${window} & game = (${ids.slice(i, i + RELEASE_ID_CHUNK).join(",")})`)));
+    }
+    return groupReleaseRows(rows);
+  },
 };
+
+/** Ids per query: keeps the body short and each chunk inside one page of rows. */
+const RELEASE_ID_CHUNK = 100;
 
 /** Main games, remakes, remasters and expanded editions. Not DLC, bundles, ports or mods. */
 const RELEASE_GAME_TYPES = "0,8,9,10";

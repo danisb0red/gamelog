@@ -157,3 +157,18 @@ export const igdbCache = pgTable("igdb_cache", {
   value: jsonb("value").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 });
+
+/**
+ * Calendar-feed credentials. One row per user; only a SHA-256 of the token is
+ * stored, so a database leak doesn't hand out working feed links. Kept out of
+ * `profiles` because that table is publicly readable. RLS is on with no
+ * policies (deny-all): only the server's postgres role can reach it.
+ */
+export const calendarTokens = pgTable("calendar_tokens", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+});
