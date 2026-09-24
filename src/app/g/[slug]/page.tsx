@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { gameProvider, gameProviderName } from "@/lib/games";
+import type { Metadata } from "next";
+import { gameProviderName } from "@/lib/games";
+import { getGameCached, getGameSafe } from "@/lib/games/lookup";
+import { GameJsonLd } from "@/components/json-ld";
+import { NOINDEX, pageMetadata, truncate } from "@/lib/seo";
 import { getMessage } from "@/lib/personality";
 import { GameSigil } from "@/components/game-sigil";
 import { PixelBubble } from "@/components/pixel";
@@ -68,13 +72,33 @@ function RefMeta({
   );
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const game = await getGameSafe(slug);
+  // A missing game still answers 200 (loading.tsx has already sent headers),
+  // so noindex is what keeps the not-found shell out of search results.
+  if (!game) return { title: "Game not found", robots: NOINDEX };
+  return pageMetadata({
+    title: game.releaseYear ? `${game.name} (${game.releaseYear})` : game.name,
+    description: game.description
+      ? truncate(game.description)
+      : `Ratings, reviews and logs for ${game.name} on GameLog.`,
+    path: `/g/${game.slug}`,
+    ownImage: true,
+  });
+}
+
 export default async function GamePage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const game = await gameProvider.getGame(slug);
+  const game = await getGameCached(slug);
   if (!game) notFound();
 
   // Lazily cache the game so logs/reviews can FK to it and it appears in lists.
@@ -128,6 +152,7 @@ export default async function GamePage({
 
   return (
     <main className="relative flex-1">
+      <GameJsonLd game={game} aggregate={aggregate} />
       {/* The game's own art washes the top of its page — every game page is
           coloured differently, which is the cheapest possible way to make the
           site feel like it's about games rather than rows in a table. */}

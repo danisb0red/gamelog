@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import { LoginForm } from "@/components/login-form";
+
+export const metadata: Metadata = { title: "Sign in", robots: { index: false, follow: false } };
 
 export default async function LoginPage() {
   // Already signed in? Go home.

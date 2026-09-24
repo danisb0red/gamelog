@@ -4,10 +4,34 @@ import { gameProvider } from "@/lib/games";
 import { GAME_SORTS, type GameSort } from "@/lib/games/types";
 import { SortSelect } from "@/components/sort-select";
 import { getMessage } from "@/lib/personality";
+import type { Metadata } from "next";
+import { NOINDEX, pageMetadata, truncate } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
 const DEFAULT_SORT: GameSort = "-released";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const dev = await gameProvider.getDeveloper(slug, DEFAULT_SORT).catch((err) => {
+    console.error("[seo] developer lookup failed:", err);
+    return null;
+  });
+  if (!dev) return { title: "Developer", robots: NOINDEX };
+  const sample = dev.games.slice(0, 3).map((g) => g.name);
+  return pageMetadata({
+    title: `Games by ${dev.name}`,
+    description: sample.length
+      ? truncate(`Games made by ${dev.name}, including ${sample.join(", ")}. Ratings and reviews on GameLog.`)
+      : `Games made by ${dev.name} on GameLog.`,
+    // Sort order is a view of the same page, not a different page.
+    path: `/developer/${slug}`,
+  });
+}
 
 export default async function DeveloperPage({
   params,
