@@ -17,6 +17,11 @@ export async function GET(request: Request) {
   if (!q.trim()) return NextResponse.json({ results: [] });
 
   try {
+    // Started before the search, awaited after it: who-is-asking is an auth
+    // round trip, and doing it second added that latency to every keystroke's
+    // search. The catch keeps a failed lookup from rejecting unobserved if the
+    // search itself throws first.
+    const userPromise = getRequestUser(request).catch(() => null);
     const results = await gameProvider.searchGames(q);
 
     // "Which of these have I logged?" is a nicety on top of search: if the
@@ -24,7 +29,7 @@ export async function GET(request: Request) {
     let mineById: Map<number, { id: string; status: string; rating: number | null }> | null =
       null;
     try {
-      const user = await getRequestUser(request);
+      const user = await userPromise;
       if (user && results.length > 0) {
         const rows = await db
           .select({ id: logs.id, gameId: logs.gameId, status: logs.status, rating: logs.rating })

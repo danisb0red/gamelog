@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { games, logs } from "@/lib/db/schema";
+import { refreshGameAggregates } from "@/lib/db/ratings";
 import { getRequestUser, ensureProfile } from "@/lib/auth";
 
 const STATUSES = ["playing", "finished", "backlog", "dropped", "replaying"] as const;
@@ -23,25 +24,6 @@ type LogPayload = {
   platform: string | null;
   loggedAt: string | null; // "YYYY-MM-DD"
 };
-
-/** Recompute and store a game's average rating + count from its logs. */
-async function refreshGameAggregates(gameId: number) {
-  const [agg] = await db
-    .select({
-      avg: sql<string | null>`avg(${logs.rating})`,
-      count: sql<number>`count(${logs.rating})`,
-    })
-    .from(logs)
-    .where(eq(logs.gameId, gameId));
-
-  await db
-    .update(games)
-    .set({
-      ratingAvg: agg.avg ? Number(agg.avg).toFixed(2) : null,
-      ratingCount: Number(agg.count),
-    })
-    .where(eq(games.id, gameId));
-}
 
 /** Parse a "YYYY-MM-DD" diary date to a Date (local noon, to avoid day shifts). */
 function parseLoggedAt(value: string | null | undefined): Date | undefined {

@@ -1,6 +1,7 @@
 import "server-only";
 import { and, asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { db } from "./index";
+import { communityRating } from "./ratings";
 import { favorites, games, listItems, lists, logs, profiles, wishlist } from "./schema";
 
 /** A user's favorite games (max 4), in order. */
@@ -220,19 +221,15 @@ export async function getProfileByUsername(username: string) {
 
 /** Community rating aggregate for a game, computed live from logs. */
 export async function getGameAggregate(gameId: number) {
-  const [agg] = await db
-    .select({
-      avg: sql<string | null>`avg(${logs.rating})`,
-      ratingCount: sql<number>`count(${logs.rating})`,
-      logCount: sql<number>`count(*)`,
-    })
-    .from(logs)
-    .where(eq(logs.gameId, gameId));
+  const [[logCount], rating] = await Promise.all([
+    db.select({ n: sql<number>`count(*)` }).from(logs).where(eq(logs.gameId, gameId)),
+    communityRating(gameId),
+  ]);
 
   return {
-    average: agg?.avg ? Number(agg.avg) : null,
-    ratingCount: Number(agg?.ratingCount ?? 0),
-    logCount: Number(agg?.logCount ?? 0),
+    average: rating.average,
+    ratingCount: rating.count,
+    logCount: Number(logCount?.n ?? 0),
   };
 }
 

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { games, logs } from "@/lib/db/schema";
+import { logs } from "@/lib/db/schema";
+import { refreshGameAggregates } from "@/lib/db/ratings";
 import { getRequestUser } from "@/lib/auth";
 import { isStatus } from "@/lib/status";
 
@@ -74,22 +75,7 @@ export async function PATCH(
     .returning();
   if (!log) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (body.rating !== undefined) {
-    const [agg] = await db
-      .select({
-        avg: sql<string | null>`avg(${logs.rating})`,
-        count: sql<number>`count(${logs.rating})`,
-      })
-      .from(logs)
-      .where(eq(logs.gameId, log.gameId));
-    await db
-      .update(games)
-      .set({
-        ratingAvg: agg.avg ? Number(agg.avg).toFixed(2) : null,
-        ratingCount: Number(agg.count),
-      })
-      .where(eq(games.id, log.gameId));
-  }
+  if (body.rating !== undefined) await refreshGameAggregates(log.gameId);
 
   return NextResponse.json({ log });
 }
