@@ -90,7 +90,7 @@ export async function generateMetadata({
       ? truncate(game.description)
       : `Ratings, reviews and logs for ${game.name} on GameLog.`,
     path: `/g/${game.slug}`,
-    ownImage: true,
+    image: `/g/${game.slug}/opengraph-image`,
   });
 }
 

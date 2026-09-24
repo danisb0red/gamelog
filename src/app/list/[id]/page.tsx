@@ -30,7 +30,7 @@ export async function generateMetadata({
       ? truncate(list.description)
       : `A list of ${count} by ${by} on GameLog.`,
     path: `/list/${list.id}`,
-    ownImage: true,
+    image: `/list/${list.id}/opengraph-image`,
   });
 }
 

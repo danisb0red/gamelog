@@ -28,7 +28,7 @@ export async function profileMetadata(
       : `${name}'s game log on GameLog.`,
     path,
     type: "profile",
-    ownImage: true,
+    image: `/u/${profile.username}/opengraph-image`,
     robots: NOINDEX,
   });
 }

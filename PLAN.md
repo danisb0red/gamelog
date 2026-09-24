@@ -257,6 +257,90 @@ never offered — the API no-ops on one, which would otherwise look like a dead
 button. No API change was needed; `POST /api/lists/:id/items` already checked
 ownership, cached the game and appended.
 
+### Discoverability: metadata, share cards, sitemap
+Before this, every page was `<title>GameLog</title>` with no og tags, no JSON-LD,
+no sitemap or robots, so a shared link previewed as nothing and Google had
+nothing to index.
+- `src/lib/site.ts`: `siteUrl()` = `NEXT_PUBLIC_SITE_URL` → `VERCEL_PROJECT_PRODUCTION_URL`
+  → localhost. Set `NEXT_PUBLIC_SITE_URL` when a custom domain exists.
+- `pageMetadata()` (`src/lib/seo.ts`) — one call per page. **Each page names its
+  share-card URL explicitly.** Relying on Next to inject the segment's
+  `opengraph-image` file worked for `/`, `/releases`, `/login` but silently did
+  NOT for the dynamic routes (game, profile) — the pages people actually share
+  shipped with a title and no picture. Don't go back to `ownImage`.
+- Cards: `opengraph-image.tsx` at root, `g/[slug]`, `list/[id]`, `u/[username]`
+  (`ImageResponse`: flexbox only, ≤500KB, bundled Space Grotesk ttf). They never
+  500 — a failed cover fetch renders a text-only card.
+- **Profiles, shelves and diaries are `noindex`** (no one consented to Google
+  indexing their logs; there's no privacy policy yet) but previews still work, so
+  `/u/` is NOT disallowed in robots.txt (a disallow can break link previews).
+- `VideoGame` JSON-LD on game pages; `aggregateRating` only from GameLog's own
+  users, never IGDB's (third-party ratings in markup are treated as spam).
+- A missing game still answers HTTP 200 (`loading.tsx` streams first), so it
+  carries `noindex`. Keep `loading.tsx` — it fixed the HOME-tap lag.
+- `sitemap.ts` (~300 URLs, 1h revalidate, each source wrapped so IGDB/DB being
+  down degrades to static URLs) and `robots.ts`.
+- **User to-do:** verify the site in Google Search Console (HTML-tag method for a
+  `.vercel.app` URL) and submit `/sitemap.xml`.
+
+### Quick log
+`+` on a search result → five status chips inline → saved. Two taps after typing
+(was four plus a page load). `quick-log.tsx`, used by the mobile search screen and
+the desktop dropdown. `/api/games/search` returns `mine` (the viewer's latest
+entry per result). An entry made *this session* is amended in place through
+`PATCH /api/logs/:id` (ownership is in the query's WHERE); an entry from an
+earlier day gets a new dated entry, because playing → finished is a real diary
+event. Signed-in search costs ~0.4s more than signed-out (auth + one query) — see
+the region note below.
+
+### Community rating = one vote per person
+`logs` is a diary, so one person can hold several entries for a game and each
+status change carries the rating forward. The average used to count every rated
+row, so one person counted several times (already true in prod: Hades stored as 2
+ratings from one user). `src/lib/db/ratings.ts` takes each person's latest *rated*
+entry; the write path (POST/PATCH) and the read path share it.
+
+### Game Pass: "Leaving soon" for your games
+Public unofficial feeds at `catalog.gamepass.com` (verified by feed title: PC
+`fdd9e2a7…` is "All PC Games", console `f6f1f99f…`, EA Play `b8900d09…`, plus
+"Recently added" and "Leaving soon"). "On Game Pass" = the union, 823 products.
+Matched to IGDB by store id then by normalised title (+ release-year tiebreak);
+710/823 (86%); the leaving list matched 7/7. 223 matches read by hand, 0 wrong —
+**a wrong match is worse than a miss**. Feeds carry no leaving *dates* and no tier
+info, so the UI says "Leaving Game Pass soon" and "US catalog", never a date.
+Tables `gamepass_products` / `gamepass_sync` (RLS on, no policies). Refresh-on-read
+with `after()` (fresh <12h, stale-while-revalidate, hidden after 72h, single-flight
+via an atomic claim). Endpoints are unofficial: if they change shape the feature
+hides and logs. First-ever refresh is ~90s inside `after()` — fine on the current
+plan, watch it if function limits are ever lowered.
+
+### Calendar feed
+Private `.ics` of upcoming releases for wishlist + backlog/playing/replaying games
+(not finished/dropped). Exists because iOS web push needs an installed PWA and
+email needs a domain. Token = the credential; only its SHA-256 is stored
+(`calendar_tokens`, RLS deny-all — never on `profiles`, which is public);
+regenerate kills the old link. RFC 5545: CRLF, fold at 75 *octets*, all-day
+events, **UID is per game with a constant suffix** (`game-<id>@gamelog`) so a moved
+date updates in place and a domain change can't duplicate every event. A provider
+failure returns 503, not an empty feed — a subscribed client treats empty as
+"everything cancelled" and would wipe the user's events. Calendar apps, not us,
+decide refresh timing (can be a day); reminders aren't promised.
+
+### OPEN: functions run in Washington, the database is in Singapore
+`x-vercel-id` on every live response is `bom1::iad1`: functions run in `iad1`
+(US East) while Supabase is `ap-southeast-1`. Every query pays a trans-oceanic
+round trip and pages run several in sequence — the likely cause of the ~3s
+`/releases`, and of the ~0.5s added by any signed-in request (auth + a query).
+Candidate fix: `vercel.json` `"regions": ["sin1"]`. Not yet applied.
+
+### Working in parallel: agent worktrees
+Agents build in isolated `git worktree`s (`.claude/worktrees/`), each on its own
+branch and port, and the lead reviews and merges. Lessons: `.claude/` must stay
+out of eslint/tsc (`eslint.config.mjs`, `tsconfig.json`) or ~18,000 phantom lint
+errors appear; add `.claude/` to `.git/info/exclude` so `git add -A` can't stage
+worktrees; agents can't run migrations blindly — new tables only, dry-run first,
+RLS boundary-tested by the lead afterwards.
+
 ### Navigation order
 Phone tab bar: **Home · Shelf · Releases · Search · You** (signed out: Home ·
 Releases · Search · Sign in). Desktop nav uses the same order: Home · Shelf ·

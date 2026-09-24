@@ -41,12 +41,14 @@ export async function YourLeavingGamePass({ games }: { games: Candidate[] }) {
           Leaving Game Pass soon
         </span>
         {leaving.map((g) => (
+          // min-h-11 = 44px: the name is the tap target, and at its natural
+          // 27px height it was easy to miss with a thumb.
           <Link
             key={g.gameId}
             href={`/g/${g.slug}`}
-            className="block truncate py-1 text-[14px] leading-snug text-neutral-100 hover:underline"
+            className="flex min-h-11 items-center text-[14px] leading-snug text-neutral-100 hover:underline"
           >
-            {g.name}
+            <span className="truncate">{g.name}</span>
           </Link>
         ))}
         <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-neutral-600">
