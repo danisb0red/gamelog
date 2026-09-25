@@ -290,7 +290,10 @@ the desktop dropdown. `/api/games/search` returns `mine` (the viewer's latest
 entry per result). An entry made *this session* is amended in place through
 `PATCH /api/logs/:id` (ownership is in the query's WHERE); an entry from an
 earlier day gets a new dated entry, because playing → finished is a real diary
-event. Signed-in search costs ~0.4s more than signed-out (auth + one query) — see
+event. The chip row also has a dashed **Wishlist** chip: it toggles the separate
+wishlist (never the diary), `/api/games/search` returns `wishlisted` beside `mine`,
+and a game that is both logged and wishlisted shows its status with a bookmark.
+Signed-in search costs ~0.4s more than signed-out (auth + one query) — see
 the region note below.
 
 ### Community rating = one vote per person

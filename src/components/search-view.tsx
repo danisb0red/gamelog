@@ -16,6 +16,7 @@ type GameResult = {
   releaseYear: number | null;
   /** Absent when signed out; null when signed in but not logged. */
   mine?: QuickLogMine;
+  wishlisted?: boolean;
 };
 
 /**
@@ -127,7 +128,7 @@ export function SearchView({ idle }: { idle?: React.ReactNode }) {
         <ul className="divide-y divide-neutral-800/60">
           {visible.map((g) => (
             <li key={g.id}>
-              <QuickLog game={g} mine={g.mine} />
+              <QuickLog game={g} mine={g.mine} wishlisted={g.wishlisted} />
             </li>
           ))}
         </ul>

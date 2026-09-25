@@ -3,7 +3,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { gameProvider } from "@/lib/games";
 import { getRequestUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { logs } from "@/lib/db/schema";
+import { logs, wishlist } from "@/lib/db/schema";
 
 /**
  * GET /api/games/search?q=elden
@@ -28,22 +28,24 @@ export async function GET(request: Request) {
     // lookup fails the results must still come back.
     let mineById: Map<number, { id: string; status: string; rating: number | null }> | null =
       null;
+    let wished = new Set<number>();
     try {
       const user = await userPromise;
       if (user && results.length > 0) {
-        const rows = await db
-          .select({ id: logs.id, gameId: logs.gameId, status: logs.status, rating: logs.rating })
-          .from(logs)
-          .where(
-            and(
-              eq(logs.userId, user.id),
-              inArray(
-                logs.gameId,
-                results.map((g) => g.id),
-              ),
-            ),
-          )
-          .orderBy(desc(logs.loggedAt), desc(logs.createdAt));
+        const ids = results.map((g) => g.id);
+        // Two independent lookups over the same ids; no reason to run them in turn.
+        const [rows, wishedRows] = await Promise.all([
+          db
+            .select({ id: logs.id, gameId: logs.gameId, status: logs.status, rating: logs.rating })
+            .from(logs)
+            .where(and(eq(logs.userId, user.id), inArray(logs.gameId, ids)))
+            .orderBy(desc(logs.loggedAt), desc(logs.createdAt)),
+          db
+            .select({ gameId: wishlist.gameId })
+            .from(wishlist)
+            .where(and(eq(wishlist.userId, user.id), inArray(wishlist.gameId, ids))),
+        ]);
+        wished = new Set(wishedRows.map((r) => r.gameId));
         mineById = new Map();
         // Newest first, so the first row seen per game is its latest entry.
         for (const r of rows) {
@@ -62,7 +64,9 @@ export async function GET(request: Request) {
 
     const byId = mineById;
     return NextResponse.json({
-      results: byId ? results.map((g) => ({ ...g, mine: byId.get(g.id) ?? null })) : results,
+      results: byId
+        ? results.map((g) => ({ ...g, mine: byId.get(g.id) ?? null, wishlisted: wished.has(g.id) }))
+        : results,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

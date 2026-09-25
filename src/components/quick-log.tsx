@@ -59,16 +59,20 @@ function Pip({ status }: { status: Status }) {
 export function QuickLog({
   game,
   mine,
+  wishlisted = false,
   onNavigate,
   compact = false,
 }: {
   game: QuickLogGame;
   mine: QuickLogMine | undefined;
+  /** Already on the viewer's wishlist. Independent of `mine`: a game can be both. */
+  wishlisted?: boolean;
   onNavigate?: () => void;
   compact?: boolean;
 }) {
   const signedIn = mine !== undefined;
   const [entry, setEntry] = useState<Entry | null>(() => toEntry(mine));
+  const [wished, setWished] = useState(wishlisted);
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +80,7 @@ export function QuickLog({
   const [sheet, setSheet] = useState(false);
   const controlRef = useRef<HTMLButtonElement>(null);
 
-  const state = error ? "error" : pending ? "saving" : entry ? "saved" : "idle";
+  const state = error ? "error" : pending ? "saving" : entry || wished ? "saved" : "idle";
 
   function refocusControl() {
     // The chips unmount when they close; without this focus falls to <body>.
@@ -128,6 +132,41 @@ export function QuickLog({
       setAnnounce(`${game.name} set to ${STATUS_LABEL[status]}`);
     } catch (e) {
       setEntry(prev);
+      setError(failure(e));
+      setOpen(true);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  /**
+   * The wishlist is not a status: it's the games you want, kept apart from the
+   * shelf and its counts. So this never touches the diary — it toggles the
+   * separate wishlist, exactly as the game page's button does.
+   */
+  async function toggleWishlist() {
+    if (pending) return;
+    setError(null);
+    setOpen(false);
+    refocusControl();
+
+    const next = !wished;
+    setWished(next);
+    setPending(true);
+    try {
+      const res = next
+        ? await fetch("/api/wishlist", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ game }),
+          })
+        : await fetch(`/api/wishlist?gameId=${game.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(res.status === 401 ? "signed-out" : `status ${res.status}`);
+      setAnnounce(
+        next ? `${game.name} added to your wishlist` : `${game.name} removed from your wishlist`,
+      );
+    } catch (e) {
+      setWished(!next);
       setError(failure(e));
       setOpen(true);
     } finally {
@@ -200,12 +239,27 @@ export function QuickLog({
         ref={controlRef}
         type="button"
         aria-expanded={open}
-        aria-label={`${game.name}: ${STATUS_LABEL[entry.status]}. Change status`}
+        aria-label={`${game.name}: ${STATUS_LABEL[entry.status]}${wished ? ", on your wishlist" : ""}. Change status`}
         onClick={() => setOpen((o) => !o)}
         className={`${controlBase} gap-2 px-3.5 text-[13px]`}
       >
         <Pip status={entry.status} />
         {STATUS_LABEL[entry.status]}
+        {wished && <BookmarkIcon filled className="text-accent" />}
+      </button>
+    );
+  } else if (wished) {
+    control = (
+      <button
+        ref={controlRef}
+        type="button"
+        aria-expanded={open}
+        aria-label={`${game.name}: on your wishlist. Change`}
+        onClick={() => setOpen((o) => !o)}
+        className={`${controlBase} gap-2 border-accent/40 px-3.5 text-[13px] text-accent`}
+      >
+        <BookmarkIcon filled />
+        Wishlist
       </button>
     );
   } else {
@@ -274,6 +328,23 @@ export function QuickLog({
               {STATUS_LABEL[s]}
             </button>
           ))}
+          {/* Dashed, and last: it sits with the statuses because that's where
+              you decide about a game, but it isn't one of them. */}
+          <button
+            type="button"
+            disabled={pending}
+            aria-label={wished ? `Remove ${game.name} from wishlist` : `Add ${game.name} to wishlist`}
+            aria-pressed={wished}
+            onClick={toggleWishlist}
+            className={`flex min-h-11 items-center gap-2 rounded-full border border-dashed px-4 text-sm disabled:opacity-50 motion-safe:transition-colors ${
+              wished
+                ? "border-accent bg-accent/10 text-accent"
+                : "border-neutral-700 text-neutral-300 hover:bg-surface-3"
+            }`}
+          >
+            <BookmarkIcon filled={wished} />
+            Wishlist
+          </button>
         </div>
       )}
 
@@ -330,6 +401,24 @@ export function QuickLog({
         {announce}
       </span>
     </div>
+  );
+}
+
+function BookmarkIcon({ filled = false, className = "" }: { filled?: boolean; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="14"
+      height="14"
+      aria-hidden="true"
+      className={className}
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+    >
+      <path d="M6.5 3.5h11a1 1 0 0 1 1 1V21l-6.5-4.5L5.5 21V4.5a1 1 0 0 1 1-1z" />
+    </svg>
   );
 }
 

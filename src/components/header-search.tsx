@@ -16,6 +16,7 @@ type GameResult = {
   coverUrl: string | null;
   releaseYear: number | null;
   mine?: QuickLogMine;
+  wishlisted?: boolean;
 };
 
 /** Global search in the header. Click a result → go to that game's page. */
@@ -121,7 +122,7 @@ export function HeaderSearch() {
 
           {visible.map((g) => (
             <li key={g.id}>
-              <QuickLog game={g} mine={g.mine} compact onNavigate={() => goTo(g.slug)} />
+              <QuickLog game={g} mine={g.mine} wishlisted={g.wishlisted} compact onNavigate={() => goTo(g.slug)} />
             </li>
           ))}
         </ul>
