@@ -39,11 +39,13 @@ export const metadata: Metadata = {
   // Lets iOS render the home-screen app full-screen with a dark status bar
   // instead of a white browser chrome.
   appleWebApp: { capable: true, title: "GameLog", statusBarStyle: "black-translucent" },
-  // Search Console's "HTML tag" verification. Set GOOGLE_SITE_VERIFICATION in
-  // Vercel to the content="…" value it shows; nothing is emitted while it's unset.
-  ...(process.env.GOOGLE_SITE_VERIFICATION
-    ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } }
-    : {}),
+  // Search Console "HTML tag" ownership proof for gamelog-liard.vercel.app. Not a
+  // secret — it is served in every page's HTML. GOOGLE_SITE_VERIFICATION
+  // overrides it, which is how to re-verify a different address (a custom
+  // domain is a separate property with its own token).
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION ?? "L1osGAMzF3EjcB9HjOTGcIdx8SvXO-naIUQy8oCNb5k",
+  },
 };
 
 /**
