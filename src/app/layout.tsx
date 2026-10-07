@@ -4,6 +4,7 @@ import "./globals.css";
 import { AppHeader } from "@/components/app-header";
 import { Konami } from "@/components/konami";
 import { HiddenMark } from "@/components/hidden-mark";
+import { SiteFooter } from "@/components/site-footer";
 import { siteUrl } from "@/lib/site";
 
 /** Body copy — warm, readable, carried over from the previous identity. */
@@ -38,6 +39,11 @@ export const metadata: Metadata = {
   // Lets iOS render the home-screen app full-screen with a dark status bar
   // instead of a white browser chrome.
   appleWebApp: { capable: true, title: "GameLog", statusBarStyle: "black-translucent" },
+  // Search Console's "HTML tag" verification. Set GOOGLE_SITE_VERIFICATION in
+  // Vercel to the content="…" value it shows; nothing is emitted while it's unset.
+  ...(process.env.GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } }
+    : {}),
 };
 
 /**
@@ -69,7 +75,10 @@ export default function RootLayout({
         <AppHeader />
         {/* pad-tabbar reserves the height of the mobile tab bar (and the home
             indicator beneath it) so the end of a page is never trapped under it. */}
-        <div className="pad-tabbar relative z-[2] flex flex-1 flex-col">{children}</div>
+        <div className="pad-tabbar relative z-[2] flex flex-1 flex-col">
+          {children}
+          <SiteFooter />
+        </div>
         <HiddenMark />
         <Konami />
       </body>

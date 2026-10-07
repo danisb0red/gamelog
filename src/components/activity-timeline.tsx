@@ -33,6 +33,7 @@ export function ActivityTimeline({ entries }: { entries: Entry[] }) {
         message={getMessage("empty.activity")}
         hint="Search a game to log it."
         slots={2}
+        action={{ href: "/search", label: "Find a game" }}
       />
     );
   }

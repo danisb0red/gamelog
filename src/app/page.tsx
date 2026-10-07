@@ -48,7 +48,7 @@ export default async function Home() {
 
           <div className="mt-9 flex items-center gap-5">
             <Link
-              href="/login"
+              href="/login?mode=signup"
               className="px-cut bg-accent px-6 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-accent-foreground transition hover:brightness-110"
             >
               Start your log
@@ -151,7 +151,14 @@ export default async function Home() {
           ) : (
             <EmptyShelf
               message={getMessage("empty.playing")}
-              hint="Set a game to Playing and it appears here."
+              hint={
+                allGames.length === 0
+                  ? "Search for a game to log."
+                  : "Set a game to Playing and it appears here."
+              }
+              // Only for someone with nothing logged yet; once there's a shelf,
+              // the empty slot is just "none in progress" and needs no button.
+              action={allGames.length === 0 ? { href: "/search", label: "Find a game" } : undefined}
             />
           )}
         </Shelf>

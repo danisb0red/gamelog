@@ -257,6 +257,51 @@ never offered — the API no-ops on one, which would otherwise look like a dead
 button. No API change was needed; `POST /api/lists/:id/items` already checked
 ownership, cached the game and appended.
 
+### Auth: handles, forgot-password, email links
+- **The email problem (measured, not assumed):** the project uses Supabase's
+  built-in email sender, which allows ~2 auth emails an hour for the *whole
+  project*. A second `recover` call minutes after the first returned
+  `429 over_email_send_rate_limit`. So with "Confirm email" ON, the third signup
+  in an hour fails, and forgot-password is just as limited. The UI now turns that
+  code into "We're sending a lot of email right now" instead of raw text.
+  **Fix is dashboard-only:** either turn "Confirm email" off (signup then needs
+  no email at all; the code already handles a session coming back from signUp),
+  or set custom SMTP (Gmail + app password is free, no domain needed). Forgot-
+  password needs working email either way.
+- **Handle picker** (`src/lib/handle.ts`): 3-20 of `[a-z0-9_]`, a reserved list,
+  and `user_<8 hex>` is reserved because it is the auto-generated fallback shape.
+  Live availability via `GET /api/handle` (public — handles are already public).
+  The handle travels in `user_metadata.username` and is **claimed in
+  `ensureProfile`**, not at signup, because with confirmation on the profile row
+  doesn't exist for days. A taken handle falls through `asked` -> `asked_NNNN` ->
+  `user_xxxxxxxx` instead of failing; a failure there would leave someone signed
+  in with no profile. user_metadata is user-editable, so it is re-validated
+  server-side. Conflict target is the id only: a bare `onConflictDoNothing()`
+  would swallow a username clash and silently skip creating the profile.
+  Existing accounts keep their `user_xxxxxxxx` handle (no rename UI yet).
+- **`/auth/callback`**: `?code=` (PKCE) and `?token_hash=&type=` (verifyOtp).
+  `next` is same-site paths only (open-redirect tested). A PKCE code needs the
+  verifier cookie from the browser that asked, so opening the email on another
+  device fails the exchange; for signup that still means the email *is*
+  confirmed, so it lands on `/login?notice=confirmed`. The robust fix for resets
+  is the `token_hash` flow, which needs the email templates changed in the
+  dashboard to link to `/auth/callback?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password`.
+  Supabase's redirect allow-list already honours any path on the site (checked
+  with `generate_link`; localhost is *not* allowed, so email flows can't be
+  tried from a local server).
+- `/reset-password` sets the new password; no session = "Link expired".
+- **Privacy:** `/privacy`, a sitewide footer (IGDB credit + privacy link), and a
+  line under the signup button. No analytics/trackers exist (checked). The
+  deletion contact is `NEXT_PUBLIC_CONTACT_EMAIL`; unset, the page says to reply
+  to wherever the person found GameLog. There is no self-serve account deletion.
+- Env: `GOOGLE_SITE_VERIFICATION` (Search Console HTML tag value) and
+  `NEXT_PUBLIC_CONTACT_EMAIL`, both optional, in `.env.local.example`.
+- Also fixed in the form: autocomplete hints (email / username / new-password),
+  show-password toggle, friendly error text, error colour contrast (was 3.9:1).
+- Empty states: `EmptyShelf` was a child of `.shelf`, where every child is
+  `flex: none`, so on a phone it ran off the edge and clipped mid-word. It is now
+  `w-full`, stacks below `sm`, and takes an `action` button ("Find a game").
+
 ### Discoverability: metadata, share cards, sitemap
 Before this, every page was `<title>GameLog</title>` with no og tags, no JSON-LD,
 no sitemap or robots, so a shared link previewed as nothing and Google had

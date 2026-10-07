@@ -41,6 +41,7 @@ export function GamesGrid({
           message={getMessage(context)}
           hint="Search a game to add it to your shelf."
           slots={4}
+          action={status === "all" ? { href: "/search", label: "Find a game" } : undefined}
         />
       </div>
     );

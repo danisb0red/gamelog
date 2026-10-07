@@ -62,6 +62,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     { url: absoluteUrl("/"), changeFrequency: "daily", priority: 1 },
+    { url: absoluteUrl("/privacy"), changeFrequency: "yearly", priority: 0.2 },
     ...[0, 1, 2, 3].map((n) => ({
       // The canonical form (see the releases page), so /releases itself isn't listed twice.
       url: absoluteUrl(`/releases?month=${shiftMonth(month, n)}`),

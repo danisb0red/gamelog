@@ -69,18 +69,27 @@ export function EmptyShelf({
   message,
   hint,
   slots = 3,
+  action,
 }: {
   message: string;
   hint?: string;
   slots?: number;
+  /** The obvious next step, as a button. */
+  action?: { href: string; label: string };
 }) {
   return (
-    <div className="flex items-end gap-5 py-2">
-      <div className="flex gap-4" aria-hidden="true">
+    // `w-full` is load-bearing. Inside a <Shelf> this is a child of `.shelf`,
+    // where every child is `flex: none` — so it sized itself to its content,
+    // ran off the right edge of a phone, and "Nothing in progress. Set a game
+    // to Playing…" was cut off mid-word. Pinned to the row's width, the content
+    // wraps instead; below `sm` the ghost covers sit above the text rather than
+    // beside it.
+    <div className="flex w-full flex-col gap-4 py-2 sm:flex-row sm:items-end sm:gap-5">
+      <div className="flex gap-3 sm:gap-4" aria-hidden="true">
         {Array.from({ length: slots }).map((_, i) => (
           <div
             key={i}
-            className="flex aspect-[3/4] w-[76px] items-center justify-center rounded-[3px] border border-dashed border-neutral-700/70"
+            className="flex aspect-[3/4] w-[64px] items-center justify-center rounded-[3px] border border-dashed border-neutral-700/70 sm:w-[76px]"
             style={{ opacity: 1 - i * 0.26 }}
           >
             {/* A ghost cartridge in the first slot — the empty shelf shows what
@@ -89,9 +98,17 @@ export function EmptyShelf({
           </div>
         ))}
       </div>
-      <div className="pb-2">
+      <div className="min-w-0 sm:pb-2">
         <p className="font-display text-base text-neutral-300">{message}</p>
         {hint && <p className="mt-1 font-mono text-[11px] text-neutral-500">{hint}</p>}
+        {action && (
+          <Link
+            href={action.href}
+            className="px-cut mt-4 inline-flex min-h-11 items-center bg-accent px-5 font-mono text-[11px] uppercase tracking-[0.15em] text-accent-foreground transition hover:brightness-110"
+          >
+            {action.label}
+          </Link>
+        )}
       </div>
     </div>
   );
