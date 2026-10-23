@@ -80,7 +80,8 @@ export default function PrivacyPage() {
             host, it sees your IP address and the pages you request.
           </li>
           <li>
-            <strong className="font-medium text-neutral-100">IGDB</strong> supplies game information
+            <strong className="font-medium text-neutral-100">IGDB</strong>{" "}
+            supplies game information
             and cover art. Cover images load straight from IGDB&apos;s image servers, so they can see your
             IP address the way any site serving an image can.
           </li>
