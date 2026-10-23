@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Figtree, Space_Grotesk, Space_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { AppHeader } from "@/components/app-header";
 import { Konami } from "@/components/konami";
@@ -83,6 +84,7 @@ export default function RootLayout({
         </div>
         <HiddenMark />
         <Konami />
+        <Analytics />
       </body>
     </html>
   );

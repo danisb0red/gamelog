@@ -85,7 +85,10 @@ export default function PrivacyPage() {
             IP address the way any site serving an image can.
           </li>
         </ul>
-        <p>There are no analytics or advertising trackers on GameLog.</p>
+        <p>
+          GameLog counts page views with Vercel Web Analytics, which sets no cookies and does not
+          follow you across other sites. There are no advertising trackers on GameLog.
+        </p>
       </Section>
 
       <Section title="Cookies">
