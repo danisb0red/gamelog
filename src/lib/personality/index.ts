@@ -8,22 +8,18 @@
  *   getMessage("empty.backlog")   → a rotating empty-state line
  *   getLoadingMessage()           → a rotating loading line
  *
- * Per-game written one-liners used to live here too and have been removed;
- * game-specific references are visual only now (see ./references.ts and
- * <GameSigil>).
+ * Per-game written one-liners and per-game pixel marks used to live here too and
+ * have been removed: nothing on the site is attached to a specific game.
  *
  * Everything is deterministic given a seed; see ./seed.ts for why that matters
  * (short version: hydration).
  */
 
 import { MESSAGES, plainMessage, type MessageContext } from "./messages";
-import { findReference } from "./references";
 import { hashSeed, pick, rotatingSeed } from "./seed";
 
 export type { MessageContext } from "./messages";
-export type { GameReference, SigilId } from "./references";
 export { MESSAGES } from "./messages";
-export { GAME_REFERENCES, findReference } from "./references";
 export { hashSeed, pick, pickSometimes, rotatingSeed } from "./seed";
 
 /**
@@ -57,9 +53,4 @@ export function getSearchLoadingMessage(seed = rotatingSeed()): string {
  */
 export function getSearchEmptyMessage(query: string): string {
   return pick(MESSAGES["search.empty"], hashSeed(query.toLowerCase().trim()));
-}
-
-/** Does this title have a visual motif attached? */
-export function hasReference(title: string | null | undefined): boolean {
-  return !!title && findReference(title) !== null;
 }

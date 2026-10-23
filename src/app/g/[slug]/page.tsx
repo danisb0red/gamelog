@@ -8,7 +8,6 @@ import { getGameCached, getGameSafe } from "@/lib/games/lookup";
 import { GameJsonLd } from "@/components/json-ld";
 import { NOINDEX, pageMetadata, truncate } from "@/lib/seo";
 import { getMessage } from "@/lib/personality";
-import { GameSigil } from "@/components/game-sigil";
 import { PixelBubble } from "@/components/pixel";
 import { db } from "@/lib/db";
 import { games } from "@/lib/db/schema";
@@ -147,9 +146,6 @@ export default async function GamePage({
     <div>
       <h1 className="font-display text-[22px] font-bold leading-tight tracking-tight text-neutral-50 sm:text-5xl">
         {game.name}
-        {/* Visual easter egg: a pixel motif for games that have one.
-            Unlabelled by design — recognising it is the reward. */}
-        <GameSigil title={game.name} className="ml-3 -translate-y-1.5" />
       </h1>
       {game.releaseYear && (
         <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-neutral-500 sm:text-[11px] sm:tracking-[0.18em]">
