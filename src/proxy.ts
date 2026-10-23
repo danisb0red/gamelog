@@ -12,6 +12,13 @@ export async function proxy(request: NextRequest) {
   const redirected = redirectOldShelfLink(request);
   if (redirected) return redirected;
 
+  // No Supabase cookie means no session to refresh. Crawlers and first-time
+  // visitors are most of the traffic, and for them this was a client built and
+  // an auth call made just to learn there is nobody signed in.
+  if (!request.cookies.getAll().some((c) => c.name.startsWith("sb-"))) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(

@@ -374,7 +374,25 @@ failure returns 503, not an empty feed — a subscribed client treats empty as
 "everything cancelled" and would wipe the user's events. Calendar apps, not us,
 decide refresh timing (can be a day); reminders aren't promised.
 
-### OPEN: functions run in Washington, the database is in Singapore
+### Vercel free-plan CPU (2026-10-23)
+Hobby's 4h/month Active CPU was exceeded and Invocations hit 758K/1M. Measured in
+Vercel Observability, not guessed: **`googleother` was 16K requests (~85% of bot
+traffic), all on `/g/[slug]`**, plus `amazonbot` 1.6K; real Googlebot was 782.
+GoogleOther is Google's research crawler, not Search indexing.
+- `robots.ts` disallows `GoogleOther` and `Amazonbot`. Googlebot untouched.
+- `vercel.json` pins functions to `sin1`, next to the database (was `iad1`).
+- The game page used to UPDATE `games` on **every view**; it now writes in `after()`
+  and only when the row is over a day old (`setWhere` on `synced_at`). Verified: no
+  change on repeat hits, refreshes once the row is stale.
+- `proxy.ts` returns early when there is no `sb-` cookie (nothing to refresh).
+- **Not done, on purpose:** CDN-caching game pages. The page and the header in the
+  root layout read the login cookie, which is also why even `/privacy` is dynamic;
+  a shared cache could serve one person's header to another. Doing it properly means
+  Cache Components / PPR so the header streams around a static shell.
+- Share cards already send `s-maxage=86400`; their 0.2% hit rate was a crawler asking
+  for each game once, which no cache can help.
+
+### RESOLVED 2026-10-23: functions ran in Washington, the database is in Singapore (now `sin1`)
 `x-vercel-id` on every live response is `bom1::iad1`: functions run in `iad1`
 (US East) while Supabase is `ap-southeast-1`. Every query pays a trans-oceanic
 round trip and pages run several in sequence — the likely cause of the ~3s

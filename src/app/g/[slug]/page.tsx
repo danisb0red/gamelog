@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 import Link from "next/link";
+import { sql } from "drizzle-orm";
 import type { Metadata } from "next";
 import { gameProviderName } from "@/lib/games";
 import { getGameCached, getGameSafe } from "@/lib/games/lookup";
@@ -103,20 +105,30 @@ export default async function GamePage({
   const game = await getGameCached(slug);
   if (!game) notFound();
 
-  // Lazily cache the game so logs/reviews can FK to it and it appears in lists.
-  await db
-    .insert(games)
-    .values({
-      id: game.id,
-      slug: game.slug,
-      name: game.name,
-      coverUrl: game.coverUrl,
-      releaseYear: game.releaseYear,
-    })
-    .onConflictDoUpdate({
-      target: games.id,
-      set: { name: game.name, coverUrl: game.coverUrl, syncedAt: new Date() },
-    });
+  // Lazily cache the game so it appears in lists and the sitemap. Logging and
+  // list-adding insert it themselves, so nothing here needs to wait on it, and
+  // a refresh is only worth a write once a day: every crawler hit used to be
+  // an UPDATE.
+  after(() =>
+    db
+      .insert(games)
+      .values({
+        id: game.id,
+        slug: game.slug,
+        name: game.name,
+        coverUrl: game.coverUrl,
+        releaseYear: game.releaseYear,
+      })
+      .onConflictDoUpdate({
+        target: games.id,
+        set: { name: game.name, coverUrl: game.coverUrl, syncedAt: new Date() },
+        setWhere: sql`${games.syncedAt} < now() - interval '1 day'`,
+      })
+      .then(
+        () => undefined,
+        (err) => console.error("[game] cache write failed:", err),
+      ),
+  );
 
   const [user, aggregate, reviews, gamePass] = await Promise.all([
     getUser(),
