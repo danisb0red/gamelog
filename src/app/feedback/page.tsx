@@ -12,13 +12,20 @@ export default function FeedbackPage() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-5 pb-16 pt-10 sm:pt-16">
       <h1 className="font-display text-4xl font-bold tracking-tight text-neutral-50">
-        Suggestions, issues, anything
+        Suggestions, bugs, or just yelling about games
       </h1>
-      <p className="mt-4 text-[15px] leading-relaxed text-neutral-300">
-        GameLog is a passion project. One person makes it, there are no ads, nothing is sold, and
-        I&apos;m not trying to make money from it. If something is broken, confusing or missing, or
-        you just have an idea, tell me. I read all of it.
-      </p>
+      <div className="mt-4 space-y-4 text-[15px] leading-relaxed text-neutral-300">
+        <p>
+          This app is a passion project of mine. I spent months trying things and tweaking them,
+          trying to figure out what looks right and what doesn&apos;t. It&apos;s not just another
+          vibecoded app. There are no ads, nothing is sold, and I&apos;m not trying to make money
+          from it.
+        </p>
+        <p>
+          If something is broken, confusing or missing, or you have an idea, or you just wanna
+          scream about your favourite game, hit me up. I read all of it.
+        </p>
+      </div>
 
       <div className="mt-8">
         <FeedbackForm />
