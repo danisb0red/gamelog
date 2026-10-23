@@ -7,7 +7,7 @@ export const metadata: Metadata = pageMetadata({
   path: "/privacy",
 });
 
-const UPDATED = "7 October 2026";
+const UPDATED = "24 October 2026";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -52,6 +52,12 @@ export default function PrivacyPage() {
           <li>
             <strong className="font-medium text-neutral-100">A calendar link,</strong> if you make one.
             Only a hash of it is kept.
+          </li>
+          <li>
+            <strong className="font-medium text-neutral-100">Feedback you send:</strong> your message,
+            the email address if you give one, and your account if you were signed in. I also keep a
+            one-way hash of your IP address, only to stop spam; the address itself isn&apos;t stored.
+            Only I can read these.
           </li>
         </ul>
       </Section>

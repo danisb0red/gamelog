@@ -138,6 +138,24 @@ export const wishlist = pgTable(
   (t) => [unique().on(t.userId, t.gameId)],
 );
 
+/**
+ * Messages from the /feedback page. Anyone can send one, signed in or not.
+ *
+ * Private by construction: RLS is on with no policies (deny-all), so only the
+ * server's postgres role can read or write it — contact addresses must never be
+ * reachable with the publishable key. `senderHash` is a salted SHA-256 of the
+ * sender's IP, kept only to rate-limit; the address itself is never stored.
+ */
+export const feedback = pgTable("feedback", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  message: text("message").notNull(),
+  // Optional, and only ever used to reply.
+  contact: text("contact"),
+  userId: uuid("user_id").references(() => profiles.id, { onDelete: "set null" }),
+  senderHash: text("sender_hash").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export type Profile = typeof profiles.$inferSelect;
 export type Game = typeof games.$inferSelect;
 export type Log = typeof logs.$inferSelect;

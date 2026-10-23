@@ -374,6 +374,16 @@ failure returns 503, not an empty feed — a subscribed client treats empty as
 "everything cancelled" and would wipe the user's events. Calendar apps, not us,
 decide refresh timing (can be a day); reminders aren't promised.
 
+### Feedback page (2026-10-24)
+`/feedback` + a footer link on every page: "passion project, no ads, nothing sold",
+and a form (message, optional email). Stored in `feedback` (created by
+`scripts/add-feedback.ts`; RLS on with **no policies**, like `igdb_cache` — verified
+the publishable key reads nothing even with rows present). Read messages with
+`npx tsx scripts/feedback.ts [n]`. Spam: off-screen trap field (answered 201, stored
+nothing), 2000-char cap, 5/hour per sender and 100/hour overall. The sender is a
+salted SHA-256 of the IP, never the address; the privacy page says so. The owner's
+email is deliberately **not** on the site.
+
 ### Vercel free-plan CPU (2026-10-23)
 Hobby's 4h/month Active CPU was exceeded and Invocations hit 758K/1M. Measured in
 Vercel Observability, not guessed: **`googleother` was 16K requests (~85% of bot

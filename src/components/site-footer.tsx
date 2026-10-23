@@ -20,9 +20,14 @@ export function SiteFooter() {
             IGDB
           </a>
         </p>
-        <Link href="/privacy" className="underline underline-offset-4 transition-colors hover:text-neutral-200">
-          Privacy
-        </Link>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          <Link href="/feedback" className="underline underline-offset-4 transition-colors hover:text-neutral-200">
+            Suggestions or issues?
+          </Link>
+          <Link href="/privacy" className="underline underline-offset-4 transition-colors hover:text-neutral-200">
+            Privacy
+          </Link>
+        </div>
       </div>
       <p className="mx-auto mt-3 max-w-6xl text-[12px] leading-relaxed text-neutral-500">
         Not affiliated with any game publisher or platform. Game names and artwork belong to their owners.
