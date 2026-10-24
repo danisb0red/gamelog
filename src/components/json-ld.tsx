@@ -20,6 +20,25 @@ export function JsonLd({ data }: { data: unknown }) {
 }
 
 /**
+ * schema.org WebSite, on the homepage. This is how Google is told the site's
+ * name. Without it, a site on a shared host like vercel.app gets named after the
+ * host: results read "Vercel" with Vercel's logo instead of "GameLog".
+ */
+export function WebsiteJsonLd() {
+  return (
+    <JsonLd
+      data={{
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "GameLog",
+        alternateName: ["GameLog", "gamelog"],
+        url: absoluteUrl("/"),
+      }}
+    />
+  );
+}
+
+/**
  * schema.org VideoGame. `aggregateRating` is GameLog's own community average
  * only, and only when someone has rated it: IGDB's score isn't our users'
  * opinion, and marking a third party's rating up as ours is what Google

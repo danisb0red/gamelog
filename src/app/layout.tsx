@@ -37,6 +37,12 @@ export const metadata: Metadata = {
   description: "Track, rate, and review the games you play.",
   openGraph: { siteName: "GameLog", type: "website", locale: "en_GB" },
   twitter: { card: "summary_large_image" },
+  // Named explicitly because Google wants a favicon at a stable URL in a multiple
+  // of 48px; the generated favicon.ico is 256px at a hashed address.
+  icons: {
+    icon: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: "/apple-icon.png",
+  },
   // Lets iOS render the home-screen app full-screen with a dark status bar
   // instead of a white browser chrome.
   appleWebApp: { capable: true, title: "GameLog", statusBarStyle: "black-translucent" },

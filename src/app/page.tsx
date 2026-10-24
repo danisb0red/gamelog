@@ -18,6 +18,7 @@ import { getUser, ensureProfile } from "@/lib/auth";
 import { getTrendingOrPopular } from "@/lib/games/trending";
 import { getMessage } from "@/lib/personality";
 import { PixelController } from "@/components/pixel";
+import { WebsiteJsonLd } from "@/components/json-ld";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,7 @@ export default async function Home() {
 
     return (
       <main className="relative flex-1">
+        <WebsiteJsonLd />
         {/* Room light is always on; the artwork wash layers on top when present. */}
       <div className="ambient-warm" aria-hidden="true" />
       {art && <div className="ambient" style={{ backgroundImage: `url(${art})` }} />}
@@ -105,6 +107,7 @@ export default async function Home() {
 
   return (
     <main className="relative flex-1">
+        <WebsiteJsonLd />
       {/* Room light is always on; the artwork wash layers on top when present. */}
       <div className="ambient-warm" aria-hidden="true" />
       {heroArt && <div className="ambient" style={{ backgroundImage: `url(${heroArt})` }} />}
